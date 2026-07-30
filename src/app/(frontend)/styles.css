@@ -1,0 +1,278 @@
+@import 'tailwindcss';
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+@plugin '@tailwindcss/typography';
+
+/* ABTR — Club de corredores Albatera. Brand tokens from the 2026 visual identity manual. */
+@theme {
+  --color-abtr-black: #000000;
+  --color-abtr-blue: #009fe3;
+  --color-abtr-red: #e30613;
+  --color-abtr-yellow: #ffed00;
+  --color-abtr-ink: #111111;
+  --color-abtr-paper: #ffffff;
+
+  /* Semantic status colours (used by badges/states across gestion & socio). */
+  --color-abtr-success: #0a8f4f;
+  --color-abtr-warning: #a86b00;
+
+  /* Archivo bound to the next/font CSS variable set on <html> in layout.tsx.
+     Display and body share its neutral grotesque shapes; hierarchy comes from weight/size. */
+  --font-display: var(--font-abtr-sans), 'Arial', 'Helvetica Neue', sans-serif;
+  --font-sans: var(--font-abtr-sans), 'Arial', 'Helvetica Neue', sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    /* Keep anchored sections clear of the sticky header. */
+    scroll-padding-top: 5rem;
+    @apply font-sans;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    /* Colours come from the semantic tokens so light/dark both work. */
+    @apply bg-background text-foreground;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    /* A firm but not blocky weight keeps the reference's clean grotesque rhythm. */
+    font-weight: 700;
+    text-wrap: balance;
+    letter-spacing: -0.015em;
+  }
+
+  /* Visible keyboard focus across the public site. */
+  :focus-visible {
+    outline: 3px solid var(--color-abtr-blue);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+}
+
+/* Brand entrance: content is visible by default; this only enhances on load. */
+@keyframes abtr-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.abtr-rise {
+  animation: abtr-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.abtr-rise-2 {
+  animation: abtr-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abtr-rise,
+  .abtr-rise-2 {
+    animation: none;
+  }
+
+  /* Global safety net: neutralise transitions/animations for motion-sensitive users. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@theme inline {
+  --font-heading: var(--font-display);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* shadcn tokens tinted with the ABTR brand palette.
+   Brand colours are committed identity, so --primary/--destructive/--ring map straight to them.
+   Neutrals stay near-grey with a whisper of the brand hue. Overridable at runtime (marca configurable). */
+:root {
+  --background: #ffffff;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: var(--color-abtr-blue);
+  --primary-foreground: #ffffff;
+  --secondary: oklch(0.968 0.004 231);
+  --secondary-foreground: #111111;
+  --muted: oklch(0.972 0.003 231);
+  --muted-foreground: oklch(0.5 0.02 245);
+  --accent: oklch(0.958 0.02 231);
+  --accent-foreground: oklch(0.45 0.13 245);
+  --destructive: var(--color-abtr-red);
+  --border: oklch(0.916 0.006 245);
+  --input: oklch(0.916 0.006 245);
+  --ring: var(--color-abtr-blue);
+  --chart-1: var(--color-abtr-blue);
+  --chart-2: #00c2ff;
+  --chart-3: var(--color-abtr-red);
+  --chart-4: oklch(0.556 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.985 0.003 231);
+  --sidebar-foreground: #111111;
+  --sidebar-primary: var(--color-abtr-blue);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: oklch(0.958 0.02 231);
+  --sidebar-accent-foreground: oklch(0.45 0.13 245);
+  --sidebar-border: oklch(0.916 0.006 245);
+  --sidebar-ring: var(--color-abtr-blue);
+}
+
+/* Natural dark theme: a deep blue-charcoal (not pure grey) with layered elevation.
+   A whisper of the brand's blue hue (≈245) runs through the neutrals so it feels like ABTR,
+   not a default dark mode. Brand blue/red stay as primary/destructive. */
+.dark {
+  --background: oklch(0.183 0.014 245);
+  --foreground: oklch(0.965 0.004 245);
+  --card: oklch(0.216 0.016 245);
+  --card-foreground: oklch(0.965 0.004 245);
+  --popover: oklch(0.216 0.016 245);
+  --popover-foreground: oklch(0.965 0.004 245);
+  --primary: var(--color-abtr-blue);
+  --primary-foreground: #ffffff;
+  --secondary: oklch(0.272 0.016 245);
+  --secondary-foreground: oklch(0.965 0.004 245);
+  --muted: oklch(0.252 0.014 245);
+  --muted-foreground: oklch(0.735 0.02 245);
+  --accent: oklch(0.3 0.028 245);
+  --accent-foreground: oklch(0.965 0.004 245);
+  --destructive: oklch(0.62 0.2 25);
+  --border: oklch(1 0 0 / 11%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: var(--color-abtr-blue);
+  --chart-1: var(--color-abtr-blue);
+  --chart-2: oklch(0.75 0.13 220);
+  --chart-3: var(--color-abtr-red);
+  --chart-4: oklch(0.7 0.02 245);
+  --chart-5: oklch(0.5 0.02 245);
+  --sidebar: oklch(0.2 0.015 245);
+  --sidebar-foreground: oklch(0.965 0.004 245);
+  --sidebar-primary: var(--color-abtr-blue);
+  --sidebar-primary-foreground: #06131b;
+  --sidebar-accent: oklch(0.3 0.028 245);
+  --sidebar-accent-foreground: oklch(0.965 0.004 245);
+  --sidebar-border: oklch(1 0 0 / 11%);
+  --sidebar-ring: var(--color-abtr-blue);
+}
+
+/* Dark mode safety net: `--color-abtr-*` are Tailwind v4 CSS variables, so flipping the
+   neutral tones here makes every existing `text-abtr-ink` / `border-abtr-ink` / paper utility
+   read correctly in dark — without touching the brand hues (blue/red/yellow/black stay put).
+   Surfaces rebuilt on semantic tokens don't rely on this; it just keeps the rest coherent. */
+.dark {
+  --color-abtr-ink: #eef1f5;
+  --color-abtr-paper: oklch(0.183 0.014 245);
+}
+
+/* Status tones (pagado, entregado, inscrito, pendiente…). Tuned so every state
+   reads clearly in BOTH light and dark. Use via the .tone-* classes or StatusBadge. */
+:root {
+  --tone-success-bg: #e6f6ee;
+  --tone-success-fg: #0a7a41;
+  --tone-success-bd: #b3e3c6;
+  --tone-warning-bg: #fbf1cf;
+  --tone-warning-fg: #855a09;
+  --tone-warning-bd: #efdfa4;
+  --tone-info-bg: #e3f3fd;
+  --tone-info-fg: #0a6aa1;
+  --tone-info-bd: #bde3fa;
+  --tone-danger-bg: #fdeceb;
+  --tone-danger-fg: #b42318;
+  --tone-danger-bd: #f6ccc8;
+}
+
+.dark {
+  --tone-success-bg: color-mix(in oklab, #22c55e 16%, transparent);
+  --tone-success-fg: #79e6a0;
+  --tone-success-bd: color-mix(in oklab, #22c55e 32%, transparent);
+  --tone-warning-bg: color-mix(in oklab, #f5b301 15%, transparent);
+  --tone-warning-fg: #f4ce6b;
+  --tone-warning-bd: color-mix(in oklab, #f5b301 30%, transparent);
+  --tone-info-bg: color-mix(in oklab, #38bdf8 15%, transparent);
+  --tone-info-fg: #8ad4f8;
+  --tone-info-bd: color-mix(in oklab, #38bdf8 30%, transparent);
+  --tone-danger-bg: color-mix(in oklab, #ef4444 16%, transparent);
+  --tone-danger-fg: #f6a6a2;
+  --tone-danger-bd: color-mix(in oklab, #ef4444 32%, transparent);
+}
+
+@layer components {
+  .tone-success {
+    background-color: var(--tone-success-bg);
+    color: var(--tone-success-fg);
+    border-color: var(--tone-success-bd);
+  }
+  .tone-warning {
+    background-color: var(--tone-warning-bg);
+    color: var(--tone-warning-fg);
+    border-color: var(--tone-warning-bd);
+  }
+  .tone-info {
+    background-color: var(--tone-info-bg);
+    color: var(--tone-info-fg);
+    border-color: var(--tone-info-bd);
+  }
+  .tone-danger {
+    background-color: var(--tone-danger-bg);
+    color: var(--tone-danger-fg);
+    border-color: var(--tone-danger-bd);
+  }
+}

@@ -1,0 +1,44 @@
+/* ABTR branding for the Payload admin panel.
+   Unlayered selectors so they win over Payload's layered defaults.
+   Keeps Payload's own light/dark theming; only tints the accent to the club blue. */
+
+:root {
+  --abtr-blue: #009fe3;
+  --abtr-blue-strong: #0086c4;
+  --abtr-red: #e30613;
+}
+
+/* Primary actions in the ABTR blue instead of the default near-black. */
+.btn--style-primary {
+  background-color: var(--abtr-blue);
+  border-color: var(--abtr-blue);
+  color: #fff;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--abtr-blue-strong);
+    border-color: var(--abtr-blue-strong);
+    color: #fff;
+  }
+}
+
+/* Text links and the active nav item pick up the brand colour. */
+a:not(.btn):hover {
+  color: var(--abtr-blue);
+}
+
+.nav__link--active,
+.nav-group__toggle[aria-expanded='true'] {
+  color: var(--abtr-blue);
+}
+
+/* Focus rings across the panel in brand blue for a consistent feel. */
+*:focus-visible {
+  outline-color: var(--abtr-blue);
+}
+
+/* Login screen: a subtle brand accent bar above the form. */
+.login__brand,
+.login .graphic-logo {
+  color: var(--abtr-blue);
+}

@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rediseño UX/UI · ABTR — antes y después</title>
+<style>
+  :root{
+    --black:#000; --blue:#009FE3; --red:#E30613; --yellow:#FFED00;
+    --ink:#111; --paper:#fff;
+    --bg:#f4f6f8; --surface:#fff; --surface-2:#f7f9fb;
+    --border:#e5e9ee; --border-2:#eef1f5;
+    --muted:#5b6572; --muted-2:#8a93a0;
+    --ok:#0a8f4f; --ok-bg:#e6f6ee;
+    --warn-bg:#fff7cc; --warn-ink:#5c4b00;
+    --shadow-sm:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.05);
+    --shadow-md:0 6px 16px rgba(16,24,40,.10);
+    --r-sm:8px; --r-md:12px; --r-lg:16px;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:var(--blue);text-decoration:none}
+  h1,h2,h3,h4{line-height:1.15;letter-spacing:-.02em;margin:0}
+  .wrap{display:grid;grid-template-columns:264px minmax(0,1fr);gap:0;max-width:1360px;margin:0 auto}
+
+  /* Sidebar TOC */
+  aside{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:26px 20px;border-right:1px solid var(--border);background:var(--surface)}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--black);display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;letter-spacing:.02em}
+  .brand small{display:block;color:var(--muted);font-size:11.5px;font-weight:600;letter-spacing:.02em}
+  .brand b{font-size:15px;letter-spacing:-.01em}
+  nav.toc{font-size:13.5px}
+  nav.toc a{display:flex;gap:9px;align-items:baseline;color:var(--ink);padding:7px 9px;border-radius:8px;font-weight:500}
+  nav.toc a:hover{background:var(--surface-2)}
+  nav.toc a .n{color:var(--muted-2);font-variant-numeric:tabular-nums;font-weight:700;min-width:16px}
+  nav.toc a .star{color:var(--blue);font-weight:800}
+  nav.toc .grp{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted-2);font-weight:800;margin:16px 9px 6px}
+
+  main{padding:0 34px 90px;min-width:0}
+  section{padding-top:30px;margin-top:14px;scroll-margin-top:14px}
+  .kick{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--blue);background:#e7f6fd;padding:4px 11px;border-radius:999px}
+  h2.sec{font-size:26px;margin:12px 0 6px}
+  .lead{color:var(--muted);font-size:15.5px;max-width:70ch}
+
+  /* Cover */
+  .cover{background:linear-gradient(150deg,#0b0f14,#141b24 60%,#0b1622);color:#fff;border-radius:0 0 22px 22px;padding:52px 40px 44px;margin:0 -34px 8px;position:relative;overflow:hidden}
+  .cover:after{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(0,159,227,.55),transparent 62%)}
+  .cover .kick{background:rgba(0,159,227,.16);color:#8fdcff}
+  .cover h1{font-size:40px;margin:16px 0 12px;max-width:20ch}
+  .cover p{color:#c7d0da;font-size:16px;max-width:64ch;margin:0}
+  .cover .bar{display:flex;gap:8px;margin-top:22px;flex-wrap:wrap}
+  .swatch{width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,.25)}
+  .pill{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:#dfe6ee;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px}
+
+  /* Before/After grid */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
+  .panel > .cap{display:flex;align-items:center;gap:8px;padding:11px 15px;font-size:12.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+  .cap.bef{background:#fbecec;color:#a4231d;border-bottom:1px solid #f4d6d4}
+  .cap.aft{background:#e7f7ee;color:#0a7a45;border-bottom:1px solid #cdead9}
+  .cap .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+  .stage{padding:16px;background:var(--surface-2)}
+  .stage.dark{background:#0e141b}
+
+  /* generic UI sim atoms */
+  .app{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;font-size:12.5px}
+  .app.flat{border-color:#dfe3e8;border-radius:10px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;border-bottom:1px solid var(--border);background:#fff}
+  .topbar .lg{display:flex;align-items:center;gap:8px;font-weight:800}
+  .topbar .lg .m{width:22px;height:22px;border-radius:6px;background:#000;color:#fff;display:grid;place-items:center;font-size:10px;font-weight:800}
+  .tabs{display:flex;gap:2px;padding:0 13px;border-bottom:1px solid var(--border);background:#fff}
+  .tabs span{padding:9px 12px;font-size:12px;font-weight:700;color:var(--muted);border-bottom:2px solid transparent}
+  .tabs span.on{color:var(--blue);border-color:var(--blue)}
+  .body{padding:14px}
+  .muted{color:var(--muted)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+
+  .btn{display:inline-flex;align-items:center;gap:6px;border-radius:999px;font-weight:800;font-size:12px;padding:8px 14px;border:1px solid transparent;cursor:default}
+  .btn.pri{background:var(--blue);color:#fff}
+  .btn.dark{background:#000;color:#fff}
+  .btn.red{background:var(--red);color:#fff}
+  .btn.ghost{background:#fff;border-color:var(--border);color:var(--ink)}
+  .btn.sm{padding:6px 11px;font-size:11px}
+
+  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;font-size:11px;font-weight:800;padding:3px 9px}
+  .b-blue{background:#e2f5fd;color:#0a7bab}
+  .b-yellow{background:var(--yellow);color:#4d4600}
+  .b-gray{background:#eef1f4;color:#5b6572}
+  .b-green{background:var(--ok-bg);color:var(--ok)}
+  .b-red{background:#fdeceb;color:#c0261e}
+
+  .chip{border:1px solid var(--border);border-radius:999px;padding:5px 11px;font-size:11.5px;font-weight:700;color:var(--muted);background:#fff}
+  .chip.on{background:#000;color:#fff;border-color:#000}
+
+  .field{margin-bottom:10px}
+  .field label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px}
+  .inp{height:34px;border:1px solid var(--border);border-radius:9px;background:#fff;display:flex;align-items:center;padding:0 11px;color:var(--muted-2);font-size:12px}
+  .inp.focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,159,227,.15);color:var(--ink)}
+
+  table.t{width:100%;border-collapse:collapse;font-size:12px}
+  table.t th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-2);font-weight:800;padding:8px 10px;border-bottom:1px solid var(--border);background:#fbfcfd;position:sticky;top:0}
+  table.t td{padding:9px 10px;border-bottom:1px solid var(--border-2)}
+  table.t tr:hover td{background:#f9fbfd}
+  .ava{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#009FE3,#00c2ff);color:#fff;display:inline-grid;place-items:center;font-size:10px;font-weight:800;margin-right:8px;vertical-align:middle}
+
+  /* legacy "antes" look: cramped, flat, gray */
+  .leg .card{border:1px solid #e3e3e3;border-radius:14px;padding:12px;margin-bottom:10px;background:#fff}
+  .leg h4{font-size:13px;margin-bottom:8px}
+  .leg .listrow{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border:1px solid #e6e6e6;border-radius:12px;margin-bottom:7px}
+  .leg .stack .card:last-child{margin-bottom:0}
+
+  .stat{background:#fff;border:1px solid var(--border);border-radius:12px;padding:11px 13px}
+  .stat .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-2);font-weight:800}
+  .stat .v{font-size:18px;font-weight:800;letter-spacing:-.02em;margin-top:3px}
+  .stat.blue{background:#e9f7fe;border-color:#cdeefb}
+  .stat.warn{background:var(--warn-bg);border-color:#f2e6a6}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  .toast{display:flex;align-items:center;gap:9px;background:#0e141b;color:#fff;border-radius:11px;padding:10px 13px;font-size:12px;font-weight:600;box-shadow:var(--shadow-md)}
+  .toast .ic{width:18px;height:18px;border-radius:50%;background:var(--ok);display:grid;place-items:center;color:#fff;font-size:11px}
+
+  .dialog{background:#fff;border:1px solid var(--border);border-radius:14px;padding:15px;box-shadow:var(--shadow-md);max-width:280px}
+
+  .empty{border:1.5px dashed var(--border);border-radius:12px;padding:20px;text-align:center;color:var(--muted)}
+  .empty .ic{width:38px;height:38px;border-radius:50%;background:var(--surface-2);display:inline-grid;place-items:center;margin-bottom:8px;font-size:18px}
+
+  .pager{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-top:1px solid var(--border);font-size:11.5px;color:var(--muted)}
+  .pager .pg{display:flex;gap:4px}
+  .pager .pg span{width:24px;height:24px;display:grid;place-items:center;border-radius:7px;border:1px solid var(--border);font-weight:700}
+  .pager .pg span.on{background:#000;color:#fff;border-color:#000}
+
+  .note{display:flex;gap:12px;padding:13px 15px;border-radius:12px;margin-top:14px;font-size:14px}
+  .note .ic{flex:none;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:14px}
+  .note.tip{background:#e7f6fd;color:#0d5877}.note.tip .ic{background:#c5ebfb}
+  .note.win{background:#e9f8ef;color:#0a5c37}.note.win .ic{background:#c9edd7}
+  .note.warn{background:#fff5d6;color:#5c4b00}.note.warn .ic{background:#f6e6a0}
+
+  /* problems list */
+  ul.prob{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:9px}
+  ul.prob li{display:flex;gap:11px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:14px;box-shadow:var(--shadow-sm)}
+  ul.prob li .x{flex:none;width:22px;height:22px;border-radius:6px;background:#fbecec;color:#c0261e;display:grid;place-items:center;font-weight:800;font-size:12px}
+  ul.prob li b{display:block}
+  ul.prob li .fix{color:var(--muted);font-size:13px}
+  ul.prob li .fix b{display:inline;color:var(--ok)}
+
+  /* design system */
+  .tok{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+  .tokc{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow-sm)}
+  .tokc .sw{height:40px;border-radius:8px;margin-bottom:8px;border:1px solid rgba(0,0,0,.06)}
+  .tokc code{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .tokc b{font-size:12.5px}
+  .scale{display:flex;align-items:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .scale .u{background:#e7f6fd;border:1px solid #cdeefb;border-radius:6px;display:grid;place-items:center;color:#0a7bab;font-size:10px;font-weight:800;font-family:var(--mono)}
+  .comps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}
+  .compc{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow-sm)}
+  .compc h4{font-size:13px;margin-bottom:10px}
+  .compc .demo{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+
+  /* roadmap */
+  .road{display:grid;gap:12px;margin-top:16px}
+  .ph{display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow-sm)}
+  .ph .num{width:44px;height:44px;border-radius:12px;background:#0e141b;color:#fff;display:grid;place-items:center;font-weight:800;font-size:17px}
+  .ph.star .num{background:var(--blue)}
+  .ph h4{font-size:15px}
+  .ph p{margin:3px 0 0;color:var(--muted);font-size:13.5px}
+  .ph .eff{font-size:11px;font-weight:800;color:var(--muted);white-space:nowrap;border:1px solid var(--border);border-radius:999px;padding:5px 10px}
+
+  .foot{margin-top:40px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
+
+  @media (max-width:980px){
+    .wrap{grid-template-columns:1fr}
+    aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border)}
+    nav.toc{columns:2}
+    .ba{grid-template-columns:1fr}
+    main{padding:0 18px 60px}
+    .cover{margin:0 -18px 8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <aside>
+    <div class="brand">
+      <div class="mark">ABTR</div>
+      <div><b>Rediseño</b><small>UX/UI · antes y después</small></div>
+    </div>
+    <nav class="toc">
+      <a href="#intro"><span class="n">0</span> Resumen y objetivos</a>
+      <div class="grp">Auditoría · antes ↔ después</div>
+      <a href="#lista"><span class="n">1</span> <span>Lista de socios <span class="star">★</span></span></a>
+      <a href="#ficha"><span class="n">2</span> <span>Ficha del socio <span class="star">★</span></span></a>
+      <a href="#socio"><span class="n">3</span> <span>Zona del socio <span class="star">★</span></span></a>
+      <a href="#payload"><span class="n">4</span> Panel Payload</a>
+      <a href="#web"><span class="n">5</span> Web pública</a>
+      <div class="grp">Fundamento</div>
+      <a href="#sistema"><span class="n">6</span> Sistema de diseño</a>
+      <a href="#marca"><span class="n">7</span> Marca configurable</a>
+      <a href="#roadmap"><span class="n">8</span> Plan por fases</a>
+    </nav>
+  </aside>
+
+  <main>
+
+    <div class="cover" id="intro">
+      <span class="kick">Propuesta de rediseño</span>
+      <h1>Un sistema visual único, moderno y escalable para gestionar el club.</h1>
+      <p>Hoy cada pantalla lleva sus propias clases sueltas, sin componentes reutilizables ni escala de espaciado
+      o sombra. Esta propuesta unifica todo en un sistema de diseño, moderniza las cuatro superficies
+      (gestión, socio, panel y web) y permite al club <b>recolorar y rebrandear sin tocar código</b>.</p>
+      <div class="bar">
+        <span class="pill"><span class="swatch" style="background:#000"></span> Negro</span>
+        <span class="pill"><span class="swatch" style="background:#009FE3"></span> Azul #009FE3</span>
+        <span class="pill"><span class="swatch" style="background:#E30613"></span> Rojo #E30613</span>
+        <span class="pill"><span class="swatch" style="background:#FFED00"></span> Amarillo #FFED00</span>
+      </div>
+    </div>
+
+    <section id="obj" style="padding-top:22px">
+      <span class="kick">Qué cambia</span>
+      <h2 class="sec">De pantallas sueltas a un sistema</h2>
+      <p class="lead">Cada bloque de abajo enseña el <b style="color:#c0261e">estado actual</b> a la izquierda y la
+      <b style="color:#0a7a45">propuesta</b> a la derecha, con simulaciones reales de la interfaz. Al final está
+      el sistema de diseño que lo sostiene y el plan por fases.</p>
+      <div class="grid4" style="margin-top:18px">
+        <div class="stat"><div class="k">Superficies</div><div class="v">4</div><div class="muted" style="font-size:11px">gestión · socio · panel · web</div></div>
+        <div class="stat blue"><div class="k">Componentes nuevos</div><div class="v">~14</div><div class="muted" style="font-size:11px">Button, Input, Card…</div></div>
+        <div class="stat"><div class="k">Escala de socios</div><div class="v">100s</div><div class="muted" style="font-size:11px">con paginación y filtros</div></div>
+        <div class="stat warn"><div class="k">Recolorear</div><div class="v">Sin código</div><div class="muted" style="font-size:11px">desde Ajustes del sitio</div></div>
+      </div>
+    </section>
+
+    <!-- 1 · LISTA -->
+    <section id="lista">
+      <span class="kick">Gestión · staff</span>
+      <h2 class="sec">1 · Lista de socios <span style="color:var(--blue)">★</span></h2>
+      <p class="lead">Es la pantalla que más se usa. Hoy carga todos los socios de golpe, sin filtros, orden ni
+      paginación, y cada fila es un enlace suelto.</p>
+      <div class="ba">
+        <div class="panel">
+          <div class="cap bef"><span class="dot"></span> Antes</div>
+          <div class="stage"><div class="app flat leg">
+            <div class="body">
+              <div class="row" style="margin-bottom:10px"><h4 style="font-size:15px">Gestión de socios</h4><span class="badge b-gray">128 socios</span></div>
+              <div class="inp" style="margin-bottom:10px">Buscar…</div>
+              <div class="listrow"><div><b>Ana Belmonte</b><div class="muted" style="font-size:11px">ana@correo.es · Senior</div></div><span class="badge b-yellow">Pendiente</span></div>
+              <div class="listrow"><div><b>Carlos Ruiz</b><div class="muted" style="font-size:11px">carlos@correo.es · Máster</div></div><span class="badge b-blue">Al corriente</span></div>
+              <div class="listrow"><div><b>Diego Sáez</b><div class="muted" style="font-size:11px">diego@correo.es · Popular</div></div><span class="badge b-gray">Exenta</span></div>
+              <div class="muted" style="font-size:11px;text-align:center;margin-top:8px">…y 125 más en la misma página</div>
+            </div>
+          </div></div>
+        </div>
+        <div class="panel">
+          <div class="cap aft"><span class="dot"></span> Después</div>
+          <div class="stage"><div class="app">
+            <div class="topbar"><div class="lg"><span class="m">A</span> Socios</div><span class="btn pri sm">+ Nuevo socio</span></div>
+            <div class="body" style="padding-bottom:0">
+              <div class="row" style="gap:8px;margin-bottom:11px">
+                <div class="inp focus" style="flex:1">🔎 Buscar por nombre o email…</div>
+                <span class="btn ghost sm">Columnas ▾</span>
+              </div>
+              <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+                <span class="chip on">Todos</span><span class="chip">Al corriente</span><span class="chip">Pendiente</span><span class="chip">Exenta</span>
+                <span class="chip" style="margin-left:auto">Orden: A–Z ▾</span>
+              </div>
+            </div>
+            <table class="t">
+              <thead><tr><th>Socio</th><th>Categoría</th><th>Cuota</th><th>Equipación</th></tr></thead>
+              <tbody>
+                <tr><td><span class="ava">A</span><b>Ana Belmonte</b></td><td class="muted">Senior</td><td><span class="badge b-yellow">Pendiente</span></td><td class="muted">Falta 1</td></tr>
+                <tr><td><span class="ava" style="background:linear-gradient(135deg,#E30613,#ff5a4d)">C</span><b>Carlos Ruiz</b></td><td class="muted">Máster</td><td><span class="badge b-green">Al corriente</span></td><td class="muted">Completa</td></tr>
+                <tr><td><span class="ava" style="background:linear-gradient(135deg,#0e141b,#3a4656)">D</span><b>Diego Sáez</b></td><td class="muted">Popular</td><td><span class="badge b-gray">Exenta</span></td><td class="muted">Completa</td></tr>
+              </tbody>
+            </table>
+            <div class="pager"><span>1–20 de 128</span><div class="pg"><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>›</span></div></div>
+          </div></div>
+        </div>
+      </div>
+      <ul class="prob">
+        <li><span class="x">✕</span><div><b>Sin paginación</b><span class="fix">128 socios en una sola página. <b>→ páginas de 20 + contador</b></span></div></li>
+        <li><span class="x">✕</span><div><b>Sin filtros ni orden</b><span class="fix">no se puede ver "solo pendientes". <b>→ chips de estado + orden + búsqueda</b></span></div></li>
+        <li><span class="x">✕</span><div><b>Columnas fijas</b><span class="fix">no configurables. <b>→ tabla con columnas elegibles (vistas flexibles)</b></span></div></li>
+      </ul>
+    </section>
+
+    <!-- 2 · FICHA -->
+    <section id="ficha">
+      <span class="kick">Gestión · staff</span>
+      <h2 class="sec">2 · Ficha del socio <span style="color:var(--blue)">★</span></h2>
+      <p class="lead">Todo sobre una persona en una pantalla. Hoy es una pila plana de tarjetas iguales; cuesta
+      orientarse y las acciones peligrosas no piden confirmación.</p>
+      <div class="ba">
+        <div class="panel">
+          <div class="cap bef"><span class="dot"></span> Antes</div>
+          <div class="stage"><div class="app flat leg">
+            <div class="body">
+              <div class="muted" style="font-size:11px;margin-bottom:6px">← Volver a socios</div>
+              <h4 style="font-size:16px;margin-bottom:2px">Ana Belmonte <span class="badge b-yellow">Pendiente</span></h4>
+              <div class="muted" style="font-size:11px;margin-bottom:10px">ana@correo.es · Senior · Temporada 2025/26</div>
+              <div class="stack">
+                <div class="card"><h4>Datos</h4><div class="muted" style="font-size:11px">nombre · teléfono · federación · categoría</div></div>
+                <div class="card"><h4>Cuota</h4><div class="muted" style="font-size:11px">tipo · pagada / pendiente / exenta</div></div>
+                <div class="card"><h4>Equipación</h4><div class="muted" style="font-size:11px">entregar · quitar (sin confirmación)</div></div>
+                <div class="card"><h4>Campos personalizados</h4><div class="muted" style="font-size:11px">…</div></div>
+                <div class="card"><h4>Participación</h4><div class="muted" style="font-size:11px">…</div></div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+        <div class="panel">
+          <div class="cap aft"><span class="dot"></span> Después</div>
+          <div class="stage"><div class="app">
+            <div class="topbar" style="align-items:flex-start">
+              <div style="display:flex;gap:10px;align-items:center">
+                <span class="ava" style="width:34px;height:34px;font-size:13px">A</span>
+                <div><div style="font-weight:800;font-size:14px">Ana Belmonte</div><div class="muted" style="font-size:11px">Senior · 2025/26</div></div>
+              </div>
+              <span class="badge b-yellow">Cuota pendiente</span>
+            </div>
+            <div class="body" style="padding:12px 13px 0">
+              <div class="grid3" style="margin-bottom:10px">
+                <div class="stat"><div class="k">Cuota</div><div class="v" style="font-size:13px">Pendiente</div></div>
+                <div class="stat"><div class="k">Equipación</div><div class="v" style="font-size:13px">Falta 1</div></div>
+                <div class="stat"><div class="k">Próximo</div><div class="v" style="font-size:13px">ALBATERUN</div></div>
+              </div>
+            </div>
+            <div class="tabs"><span class="on">Datos</span><span>Cuota</span><span>Equipación</span><span>Campos</span><span>Participación</span></div>
+            <div class="body">
+              <div class="grid2">
+                <div class="field"><label>Nombre</label><div class="inp focus">Ana Belmonte</div></div>
+                <div class="field"><label>Teléfono</label><div class="inp">600 12 34 56</div></div>
+              </div>
+              <div class="row"><span class="btn pri sm">Guardar</span>
+                <div class="dialog" style="padding:10px 12px;max-width:none;display:flex;gap:9px;align-items:center;box-shadow:none">
+                  <span class="badge b-red">Quitar entrega</span><span class="muted" style="font-size:11px">¿Seguro? Sí / No</span>
+                </div>
+              </div>
+              <div style="margin-top:12px"><div class="toast"><span class="ic">✓</span> Datos de Ana guardados</div></div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <ul class="prob">
+        <li><span class="x">✕</span><div><b>Pila plana sin jerarquía</b><span class="fix">todo pesa igual. <b>→ cabecera pegajosa + stats + pestañas</b></span></div></li>
+        <li><span class="x">✕</span><div><b>Borrados sin confirmar</b><span class="fix">"Quitar" borra directo. <b>→ diálogo de confirmación</b></span></div></li>
+        <li><span class="x">✕</span><div><b>Feedback que parpadea</b><span class="fix">mensaje de 1s. <b>→ toast claro y persistente</b></span></div></li>
+      </ul>
+    </section>
+
+    <!-- 3 · SOCIO -->
+    <section id="socio">
+      <span class="kick">Zona de socio</span>
+      <h2 class="sec">3 · Panel del socio <span style="color:var(--blue)">★</span></h2>
+      <p class="lead">Lo que ve cada corredor de sí mismo. Hoy repite el bloque "Mis datos", las tarjetas resumen
+      pesan igual y las marcas/inscripciones no se agrupan por temporada.</p>
+      <div class="ba">
+        <div class="panel">
+          <div class="cap bef"><span class="dot"></span> Antes</div>
+          <div class="stage"><div class="app flat leg">
+            <div class="body">
+              <div class="card"><h4 style="font-size:15px">Hola, Ana 👋 <span class="badge b-yellow">Pendiente</span></h4><div class="muted" style="font-size:11px">email · teléfono · federación (Mis datos)</div></div>
+              <div class="grid3" style="margin:0 0 10px">
+                <div class="card" style="margin:0"><div class="muted" style="font-size:10px">Cuota</div><b style="font-size:12px">Pendiente</b></div>
+                <div class="card" style="margin:0"><div class="muted" style="font-size:10px">Evento</div><b style="font-size:12px">ALBATERUN</b></div>
+                <div class="card" style="margin:0"><div class="muted" style="font-size:10px">Equipación</div><b style="font-size:12px">Falta 1</b></div>
+              </div>
+              <div class="card"><h4>Mis datos</h4><div class="muted" style="font-size:11px">(repite email/teléfono otra vez)</div></div>
+              <div class="card"><h4>Mi equipación</h4><div class="muted" style="font-size:11px">mezcla temporadas y estados</div></div>
+              <div class="card"><h4>Mis marcas</h4><div class="muted" style="font-size:11px">lista sin agrupar ni ordenar</div></div>
+            </div>
+          </div></div>
+        </div>
+        <div class="panel">
+          <div class="cap aft"><span class="dot"></span> Después</div>
+          <div class="stage"><div class="app">
+            <div class="body" style="background:linear-gradient(135deg,#0e141b,#17222e);color:#fff;border-radius:0">
+              <div class="row"><div><div style="font-size:11px;color:#8fb8cc">Zona de socio · 2025/26</div><div style="font-weight:800;font-size:16px">Hola, Ana</div></div><span class="badge b-yellow">Cuota pendiente</span></div>
+            </div>
+            <div class="body" style="padding-bottom:6px">
+              <div class="grid3">
+                <div class="stat warn"><div class="k">Tu cuota</div><div class="v" style="font-size:13px">Pendiente</div><span class="muted" style="font-size:10px">Habla con el club</span></div>
+                <div class="stat"><div class="k">Próximo evento</div><div class="v" style="font-size:13px">ALBATERUN</div><span class="muted" style="font-size:10px">4 oct</span></div>
+                <div class="stat blue"><div class="k">Te falta recoger</div><div class="v" style="font-size:13px">Camiseta M</div><span class="muted" style="font-size:10px">1 prenda</span></div>
+              </div>
+            </div>
+            <div class="body" style="padding-top:8px">
+              <div class="row" style="margin-bottom:8px"><b style="font-size:12.5px">Mis marcas</b><span class="chip" style="font-size:10.5px">2025/26 ▾</span></div>
+              <div class="row" style="border:1px solid var(--border);border-radius:10px;padding:8px 11px;margin-bottom:6px"><span style="font-weight:700">ALBATERUN 2025</span><span class="badge b-blue">3.º · 42:10</span></div>
+              <div class="empty" style="padding:12px"><div class="ic">🏅</div><div style="font-size:11.5px">Aún no tienes más marcas esta temporada</div></div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <ul class="prob">
+        <li><span class="x">✕</span><div><b>"Mis datos" duplicado</b><span class="fix">aparece dos veces. <b>→ una sola vez, en la cabecera</b></span></div></li>
+        <li><span class="x">✕</span><div><b>Sin contexto de temporada</b><span class="fix">marcas y equipación mezcladas. <b>→ agrupado por temporada</b></span></div></li>
+        <li><span class="x">✕</span><div><b>Vacíos sosos</b><span class="fix">texto gris suelto. <b>→ estados vacíos con icono y guía</b></span></div></li>
+      </ul>
+    </section>
+
+    <!-- 4 · PAYLOAD -->
+    <section id="payload">
+      <span class="kick">Panel de administración</span>
+      <h2 class="sec">4 · Panel Payload (<code>/admin</code>)</h2>
+      <p class="lead">El panel completo donde se configura todo. Está 100% con el aspecto por defecto de Payload
+      (gris, sin marca). Se puede brandear con los colores ABTR, logo, favicon y un inicio con accesos y cifras.</p>
+      <div class="ba">
+        <div class="panel">
+          <div class="cap bef"><span class="dot"></span> Antes</div>
+          <div class="stage dark"><div class="app" style="border:0">
+            <div style="background:#1b1b1b;color:#bbb;padding:20px 16px;text-align:center">
+              <div style="width:26px;height:26px;border-radius:6px;background:#333;margin:0 auto 12px"></div>
+              <div style="font-size:13px;color:#ddd;font-weight:700;margin-bottom:12px">Payload</div>
+              <div style="background:#2a2a2a;border-radius:6px;height:30px;margin-bottom:8px"></div>
+              <div style="background:#2a2a2a;border-radius:6px;height:30px;margin-bottom:12px"></div>
+              <div style="background:#4a4a4a;color:#fff;border-radius:6px;height:32px;display:grid;place-items:center;font-size:12px">Iniciar sesión</div>
+            </div>
+          </div></div>
+        </div>
+        <div class="panel">
+          <div class="cap aft"><span class="dot"></span> Después</div>
+          <div class="stage"><div class="app">
+            <div class="topbar"><div class="lg"><span class="m">A</span> Panel ABTR</div><span class="muted" style="font-size:11px">Hola, admin</span></div>
+            <div class="body">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-2);font-weight:800;margin-bottom:8px">Accesos rápidos</div>
+              <div class="grid2" style="margin-bottom:12px">
+                <span class="btn pri" style="justify-content:center">Gestión de socios</span>
+                <span class="btn dark" style="justify-content:center">Importar resultados</span>
+              </div>
+              <div class="grid3">
+                <div class="stat blue"><div class="k">Socios activos</div><div class="v">96</div></div>
+                <div class="stat warn"><div class="k">Cuotas pend.</div><div class="v">14</div></div>
+                <div class="stat"><div class="k">Próximo evento</div><div class="v" style="font-size:13px">ALBATERUN</div></div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <div class="note tip"><span class="ic">💡</span><div>Se hace con <code>custom.scss</code> (mapear la paleta ABTR a las variables de Payload) y <code>admin.components</code> (logo, icono, favicon y un panel de inicio). No se toca el contenido de las colecciones.</div></div>
+    </section>
+
+    <!-- 5 · WEB -->
+    <section id="web">
+      <span class="kick">Cara al público</span>
+      <h2 class="sec">5 · Web pública</h2>
+      <p class="lead">La web ya está bien planteada; el rediseño la sube al mismo sistema: tipografía y ritmo de
+      espaciado coherentes, tarjetas con la nueva sombra suave y los colores de marca (que ahora serán
+      configurables). Sin cambiar el contenido, solo el acabado.</p>
+      <div class="ba">
+        <div class="panel">
+          <div class="cap bef"><span class="dot"></span> Antes</div>
+          <div class="stage"><div class="app flat leg"><div class="body">
+            <div class="card"><h4>Próximo evento</h4><div class="muted" style="font-size:11px">tarjeta con borde plano</div></div>
+            <div class="grid2"><div class="card" style="margin:0"><b style="font-size:12px">Noticia</b></div><div class="card" style="margin:0"><b style="font-size:12px">Noticia</b></div></div>
+          </div></div></div>
+        </div>
+        <div class="panel">
+          <div class="cap aft"><span class="dot"></span> Después</div>
+          <div class="stage"><div class="app"><div class="body">
+            <div style="background:linear-gradient(135deg,#009FE3,#00c2ff);color:#fff;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow-md)"><div style="font-size:10px;letter-spacing:.05em;opacity:.85;font-weight:800">PRÓXIMO EVENTO</div><div style="font-weight:800;font-size:16px">ALBATERUN 2026</div><div style="font-size:11px;opacity:.9">4 de octubre · Albatera</div></div>
+            <div class="grid2">
+              <div class="stat" style="box-shadow:var(--shadow-sm)"><div class="k">Noticia</div><div style="font-weight:700;font-size:12px;margin-top:2px">Nueva equipación</div></div>
+              <div class="stat" style="box-shadow:var(--shadow-sm)"><div class="k">Noticia</div><div style="font-weight:700;font-size:12px;margin-top:2px">Social Run</div></div>
+            </div>
+          </div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 · SISTEMA -->
+    <section id="sistema">
+      <span class="kick">Fundamento</span>
+      <h2 class="sec">6 · Sistema de diseño · shadcn/ui + TanStack</h2>
+      <p class="lead">Todo lo anterior se sostiene sobre una sola base: <b>shadcn/ui</b> (componentes sobre Tailwind,
+      tematizables por variables CSS) con <b>TanStack Table</b> para las tablas, teñido con la paleta ABTR. Se
+      define una vez y se usa en las zonas de app; la web pública conserva su identidad de marca.</p>
+      <div class="note tip" style="margin-top:14px"><span class="ic">🧩</span><div>Se instala con <code>shadcn init</code>
+      (compatible con tu Tailwind v4 + React 19 + Next 15). Mapeamos <code>--primary</code>→azul,
+      <code>--destructive</code>→rojo, <code>--ring</code>→azul… así la <b>marca configurable</b> (sección 7)
+      re-tiñe <u>todos</u> los componentes de una. La <b>DataTable</b> es TanStack: paginación, orden, filtros
+      y columnas configurables sin construirlo a mano.</div></div>
+
+      <h4 style="margin:20px 0 0;font-size:14px">Paleta semántica (sobre los colores de marca)</h4>
+      <div class="tok">
+        <div class="tokc"><div class="sw" style="background:#009FE3"></div><b>Primario / acción</b><br><code>--blue</code></div>
+        <div class="tokc"><div class="sw" style="background:#E30613"></div><b>Peligro / CTA fuerte</b><br><code>--red</code></div>
+        <div class="tokc"><div class="sw" style="background:#FFED00"></div><b>Aviso / pendiente</b><br><code>--yellow</code></div>
+        <div class="tokc"><div class="sw" style="background:#0a8f4f"></div><b>Éxito</b><br><code>--success</code></div>
+        <div class="tokc"><div class="sw" style="background:#f7f9fb;border-color:#e5e9ee"></div><b>Superficie</b><br><code>--surface / -2</code></div>
+        <div class="tokc"><div class="sw" style="background:#e5e9ee"></div><b>Borde</b><br><code>--border</code></div>
+      </div>
+
+      <h4 style="margin:22px 0 0;font-size:14px">Escala de espaciado &amp; radio</h4>
+      <div class="scale">
+        <div class="u" style="width:34px;height:26px">4</div>
+        <div class="u" style="width:34px;height:34px">8</div>
+        <div class="u" style="width:34px;height:44px">12</div>
+        <div class="u" style="width:34px;height:54px">16</div>
+        <div class="u" style="width:34px;height:66px">24</div>
+        <div class="u" style="width:34px;height:80px">32</div>
+        <span class="muted" style="font-size:12px;margin-left:8px">· radios 8 / 12 / 16px · sombras suaves ≤8px (sin "ghost-card")</span>
+      </div>
+
+      <h4 style="margin:22px 0 0;font-size:14px">Catálogo de componentes (~14)</h4>
+      <div class="comps">
+        <div class="compc"><h4>Button</h4><div class="demo"><span class="btn pri sm">Primary</span><span class="btn dark sm">Dark</span><span class="btn ghost sm">Ghost</span><span class="btn red sm">Danger</span></div></div>
+        <div class="compc"><h4>Badge</h4><div class="demo"><span class="badge b-green">Al corriente</span><span class="badge b-yellow">Pendiente</span><span class="badge b-gray">Exenta</span></div></div>
+        <div class="compc"><h4>Input / Field</h4><div class="demo" style="display:block"><label style="font-size:10px;font-weight:700;color:var(--muted)">Email</label><div class="inp focus" style="margin-top:4px">ana@correo.es</div></div></div>
+        <div class="compc"><h4>Stat</h4><div class="demo"><div class="stat" style="flex:1"><div class="k">Socios</div><div class="v">96</div></div></div></div>
+        <div class="compc"><h4>Empty state</h4><div class="empty" style="padding:12px"><div class="ic" style="width:30px;height:30px;font-size:15px">📭</div><div style="font-size:11px">Nada por aquí todavía</div></div></div>
+        <div class="compc"><h4>Toast</h4><div class="demo"><div class="toast" style="font-size:11px;padding:8px 11px"><span class="ic">✓</span> Guardado</div></div></div>
+        <div class="compc"><h4>Chips / filtros</h4><div class="demo"><span class="chip on">Todos</span><span class="chip">Pendiente</span></div></div>
+        <div class="compc"><h4>ConfirmDialog</h4><div class="demo"><span class="badge b-red">Quitar</span> <span class="muted" style="font-size:11px">¿Seguro? Sí / No</span></div></div>
+      </div>
+      <div class="note win"><span class="ic">✅</span><div>Además: <b>DataTable</b> (cabecera pegajosa, orden, scroll en móvil, columnas elegibles), <b>Tabs</b>, <b>PageHeader</b>, <b>Toolbar</b> y <b>Card/Panel</b>. Con tests unitarios por componente.</div></div>
+    </section>
+
+    <!-- 7 · MARCA -->
+    <section id="marca">
+      <span class="kick">Configurable por el club</span>
+      <h2 class="sec">7 · Marca editable sin código</h2>
+      <p class="lead">Desde <b>Ajustes del sitio</b>, el club podrá subir su logo (ya existe) y elegir sus colores.
+      El sistema los inyecta como variables CSS al cargar, así que el cambio se refleja en toda la web y en las
+      zonas de gestión y socio — sin que nadie toque el código.</p>
+      <div class="ba">
+        <div class="panel">
+          <div class="cap aft"><span class="dot"></span> Ajustes → Marca (nuevo)</div>
+          <div class="stage"><div class="app"><div class="body">
+            <div class="field"><label>Logo (fondo claro)</label><div class="inp">logo-abtr.svg ✓</div></div>
+            <div class="grid3">
+              <div class="field"><label>Color primario</label><div class="inp"><span style="width:14px;height:14px;border-radius:4px;background:#009FE3;display:inline-block;margin-right:6px"></span>#009FE3</div></div>
+              <div class="field"><label>Secundario</label><div class="inp"><span style="width:14px;height:14px;border-radius:4px;background:#E30613;display:inline-block;margin-right:6px"></span>#E30613</div></div>
+              <div class="field"><label>Acento</label><div class="inp"><span style="width:14px;height:14px;border-radius:4px;background:#FFED00;display:inline-block;margin-right:6px"></span>#FFED00</div></div>
+            </div>
+            <span class="btn pri sm">Guardar marca</span>
+          </div></div></div>
+        </div>
+        <div class="panel">
+          <div class="cap aft"><span class="dot"></span> Se aplica en todo</div>
+          <div class="stage"><div class="app"><div class="body">
+            <div class="note tip" style="margin:0 0 10px"><span class="ic">⚙️</span><div style="font-size:12.5px">Al guardar, <code>layout.tsx</code> lee los ajustes e inyecta <code>--color-abtr-*</code> en <code>&lt;html&gt;</code>.</div></div>
+            <div class="row" style="gap:8px">
+              <span class="btn pri sm" style="flex:1;justify-content:center">Botón</span>
+              <span class="badge b-blue">Estado</span>
+              <span style="width:22px;height:22px;border-radius:6px;background:#009FE3"></span>
+            </div>
+            <div class="muted" style="font-size:11px;margin-top:8px">Cambia el color arriba → cambian botones, enlaces, badges y acentos en web, gestión y socio.</div>
+          </div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 · ROADMAP -->
+    <section id="roadmap">
+      <span class="kick">Cómo lo hago</span>
+      <h2 class="sec">8 · Plan por fases</h2>
+      <p class="lead">Voy fase a fase y verifico cada una (typecheck, lint, tests y capturas) para que puedas
+      revisar el rumbo antes de propagarlo a todas las pantallas.</p>
+      <div class="road">
+        <div class="ph star"><div class="num">0</div><div><h4>Documento antes/después</h4><p>Este HTML. La referencia visual que aprueba el rumbo.</p></div><span class="eff">hecho</span></div>
+        <div class="ph star"><div class="num">1</div><div><h4>Sistema de diseño · shadcn/ui + TanStack</h4><p>Instalar y tematizar shadcn con la paleta ABTR, DataTable con TanStack, envoltorios y tests.</p></div><span class="eff">base</span></div>
+        <div class="ph star"><div class="num">2</div><div><h4>/gestion (staff)</h4><p>Shell con nav + breadcrumbs, lista con filtros/orden/paginación/columnas, ficha con pestañas, confirmaciones y toasts.</p></div><span class="eff">alto</span></div>
+        <div class="ph"><div class="num">3</div><div><h4>/socios (socio)</h4><p>Dashboard reagrupado por temporada, sin duplicados, con estados vacíos; perfil sobre los primitivos.</p></div><span class="eff">medio</span></div>
+        <div class="ph"><div class="num">4</div><div><h4>Panel Payload</h4><p>Branding ABTR (colores, logo, favicon) e inicio con accesos rápidos y cifras.</p></div><span class="eff">medio</span></div>
+        <div class="ph star"><div class="num">5</div><div><h4>Marca configurable + web pública</h4><p>Colores editables desde Ajustes (inyección de variables) y web pública sobre el nuevo sistema.</p></div><span class="eff">medio</span></div>
+      </div>
+      <div class="foot">
+        Documento generado como Fase 0 del rediseño · <b>docs/rediseno-admin.html</b> · autocontenido e imprimible.
+        Cuando le des el visto bueno, empiezo por la Fase 1 (sistema de diseño).
+      </div>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

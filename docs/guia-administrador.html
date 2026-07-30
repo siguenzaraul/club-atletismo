@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Guía del administrador · ABTR — Club de corredores Albatera</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --fg:#12161f; --muted:#5b6472; --border:#e3e7ee; --card:#fff;
+    --black:#000; --blue:#009FE3; --red:#E30613; --yellow:#FFED00;
+    --blue-50:#e6f6fd; --blue-700:#036f9e; --red-50:#fdeaec; --yellow-50:#fffbe0;
+    --green:#16a34a; --green-50:#effcf3; --slate:#3a424f;
+    --sh:0 1px 2px rgba(16,22,34,.06),0 8px 24px -12px rgba(16,22,34,.12);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;}
+  .layout{display:grid;grid-template-columns:270px 1fr;gap:0;max-width:1280px;margin:0 auto}
+  /* ---------- Sidebar TOC ---------- */
+  aside{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:22px 16px 40px;border-right:1px solid var(--border);background:#fff}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .brand svg{flex:0 0 auto}
+  .brand b{font-size:18px;letter-spacing:-.01em}
+  .brand span{display:block;font-size:11px;color:var(--muted);font-weight:600}
+  .toc-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:18px 0 8px;font-weight:700}
+  nav.toc a{display:flex;gap:10px;align-items:baseline;padding:7px 10px;border-radius:9px;color:var(--slate);text-decoration:none;font-size:13.5px;font-weight:600}
+  nav.toc a:hover{background:var(--blue-50);color:var(--blue-700)}
+  nav.toc a .k{flex:0 0 22px;height:22px;border-radius:6px;background:#eef1f6;color:var(--slate);font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+  nav.toc a.star .k{background:var(--yellow);color:#000}
+  /* ---------- Main ---------- */
+  main{padding:0 30px 100px;min-width:0}
+  .wrap{max-width:860px;margin:0 auto}
+  section{padding-top:34px;margin-top:20px}
+  h1{font-size:clamp(28px,5vw,40px);letter-spacing:-.03em;line-height:1.05;margin:0 0 8px;font-weight:900}
+  h2{font-size:clamp(21px,3.4vw,27px);letter-spacing:-.02em;margin:6px 0 6px;font-weight:800;display:flex;align-items:center;gap:12px}
+  h2 .num{flex:0 0 auto;width:38px;height:38px;border-radius:11px;background:var(--black);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900}
+  h2.star .num{background:var(--yellow);color:#000}
+  h3{font-size:17px;margin:26px 0 6px;font-weight:800;color:var(--slate)}
+  h4{font-size:14.5px;margin:16px 0 4px;font-weight:800;color:var(--slate)}
+  p{margin:8px 0}
+  a{color:var(--blue-700)}
+  code{background:#eef1f6;padding:1px 6px;border-radius:5px;font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
+  .lead{font-size:18px;color:var(--muted);max-width:70ch}
+  .hr{height:1px;background:var(--border);border:0;margin:30px 0}
+  /* ---------- Cover ---------- */
+  .cover{background:linear-gradient(180deg,#000,#0d1526);color:#fff;border-radius:22px;padding:40px 34px;margin-top:26px;position:relative;overflow:hidden;box-shadow:var(--sh)}
+  .cover .kicker{display:inline-block;background:var(--yellow);color:#000;font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:6px 12px;border-radius:999px}
+  .cover h1{color:#fff;margin-top:16px}
+  .cover p{color:#c7cedb;max-width:60ch;font-size:18px}
+  .cover .dots{position:absolute;right:-30px;top:-30px;opacity:.5}
+  .cover .who{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px}
+  .cover .who span{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:10px 14px;font-size:14px;font-weight:600}
+  /* ---------- Callouts ---------- */
+  .call{border-radius:14px;padding:14px 16px 14px 46px;position:relative;margin:16px 0;font-size:15px}
+  .call .ic{position:absolute;left:14px;top:13px;font-size:18px}
+  .call.tip{background:var(--blue-50);border:1px solid #bce6fb}
+  .call.warn{background:var(--red-50);border:1px solid #f6c3c8}
+  .call.auto{background:var(--green-50);border:1px solid #bfe9cd}
+  .call.trick{background:var(--yellow-50);border:1px solid #f0e29a}
+  .call b{color:#000}
+  /* ---------- Badges ---------- */
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .badge{font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px;letter-spacing:.02em}
+  .badge.time{background:#eef1f6;color:var(--slate)}
+  .badge.easy{background:var(--green-50);color:var(--green)}
+  .badge.med{background:var(--yellow-50);color:#8a7300}
+  .badge.once{background:var(--blue-50);color:var(--blue-700)}
+  .badge.star{background:var(--yellow);color:#000}
+  /* ---------- Steps ---------- */
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:16px 0}
+  ol.steps>li{counter-increment:s;position:relative;padding:4px 0 18px 52px;margin:0}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center}
+  ol.steps>li::after{content:"";position:absolute;left:16px;top:34px;bottom:0;width:2px;background:var(--border)}
+  ol.steps>li:last-child::after{display:none}
+  ol.steps>li b{color:#000}
+  /* ---------- Simulated UI ---------- */
+  .sim{border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--sh);margin:16px 0;background:#fff}
+  .sim .bar{background:#f0f2f6;border-bottom:1px solid var(--border);padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+  .sim .bar .dot{width:10px;height:10px;border-radius:50%}
+  .sim .bar .url{margin-left:8px;background:#fff;border:1px solid var(--border);border-radius:7px;padding:3px 10px;font-family:ui-monospace,monospace;font-size:11.5px;color:var(--slate)}
+  .sim .body{padding:16px}
+  .sim .cap{background:#fafbfc;border-top:1px solid var(--border);padding:8px 12px;font-size:12.5px;color:var(--muted)}
+  /* admin menu sim */
+  .adminmenu{display:grid;grid-template-columns:210px 1fr;min-height:230px}
+  .adminmenu .side{background:#0d1526;color:#cdd5e2;padding:14px 10px;font-size:13px}
+  .adminmenu .side .grp{color:#8b96a8;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;margin:12px 8px 4px;font-weight:800}
+  .adminmenu .side .grp:first-child{margin-top:0}
+  .adminmenu .side .it{padding:6px 8px;border-radius:7px;font-weight:600}
+  .adminmenu .side .it.on{background:var(--blue);color:#fff}
+  .adminmenu .main{padding:16px;background:#fff}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;padding:5px 11px;border-radius:999px}
+  .pill.blue{background:var(--blue);color:#fff}
+  .pill.blue-soft{background:var(--blue-50);color:var(--blue-700)}
+  .pill.yellow{background:var(--yellow);color:#000}
+  .pill.red{background:var(--red);color:#fff}
+  .pill.ghost{background:#eef1f6;color:var(--slate)}
+  .pill.green{background:var(--green-50);color:var(--green)}
+  .btn{display:inline-flex;align-items:center;gap:6px;font-weight:800;border-radius:999px;padding:9px 16px;font-size:13.5px;border:0;cursor:default}
+  .btn.blue{background:var(--blue);color:#fff}
+  .btn.red{background:var(--red);color:#fff}
+  .btn.dark{background:#000;color:#fff}
+  .btn.ghost{background:#fff;border:1.5px solid var(--border);color:var(--slate)}
+  .fieldrow{display:flex;flex-direction:column;gap:4px;margin:8px 0}
+  .fieldrow label{font-size:12.5px;font-weight:700;color:var(--slate)}
+  .inp{border:1.5px solid var(--border);border-radius:9px;padding:8px 12px;font-size:14px;background:#fff;color:#333}
+  .rel{position:relative}
+  .point{position:absolute;background:var(--red);color:#fff;font-size:12px;font-weight:800;padding:5px 10px;border-radius:8px;box-shadow:var(--sh);white-space:nowrap}
+  .point::after{content:"";position:absolute;width:0;height:0;border:7px solid transparent}
+  .yellowbox{background:var(--yellow-50);border:1px solid #f0e29a;border-radius:10px;padding:12px 14px}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
+  .tbl{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+  .tbl table{min-width:520px;margin:0}
+  th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:#0d1526;color:#eef1f6;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+  tr:last-child td{border-bottom:none}
+  td.mono{font-family:ui-monospace,monospace;font-size:12.5px}
+  ul.clean{margin:8px 0 8px 2px;padding:0;list-style:none}
+  ul.clean li{position:relative;padding:4px 0 4px 26px}
+  ul.clean li::before{content:"✔";position:absolute;left:0;color:var(--green);font-weight:900}
+  ul.norm{margin:8px 0 8px 20px}ul.norm li{margin:4px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .box{border:1px solid var(--border);border-radius:14px;padding:16px;background:#fff;box-shadow:var(--sh)}
+  .kbd{background:#0d1526;color:#e2e8f0;border-radius:10px;padding:12px 14px;font-family:ui-monospace,monospace;font-size:12.5px;white-space:pre;overflow-x:auto;display:block;margin:10px 0}
+  .kbd .c{color:#8b96a8}.kbd .b{color:#5cc8f5}.kbd .g{color:#7ee0a8}
+  .faq{border:1px solid var(--border);border-radius:12px;margin:10px 0;background:#fff;overflow:hidden}
+  .faq summary{cursor:pointer;padding:14px 16px;font-weight:800;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::after{content:"+";font-size:20px;color:var(--muted)}
+  .faq[open] summary::after{content:"–"}
+  .faq .a{padding:0 16px 14px;color:var(--slate)}
+  .cheat{background:#0d1526;color:#fff;border-radius:16px;padding:22px}
+  .cheat h3{color:#fff;margin-top:0}
+  .cheat table{color:#cdd5e2}
+  .cheat th{background:transparent;color:var(--yellow);border-color:#2a3648}
+  .cheat td{border-color:#2a3648}
+  .toplink{display:inline-block;margin-top:10px;font-size:12.5px;color:var(--muted);text-decoration:none}
+  @media(max-width:920px){
+    .layout{grid-template-columns:1fr}
+    aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border)}
+    nav.toc{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+    .grid2{grid-template-columns:1fr}
+    main{padding:0 16px 60px}
+  }
+  @media print{
+    aside{display:none} .layout{grid-template-columns:1fr;max-width:none}
+    .cover{background:#000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    section{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside>
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+        <rect width="17" height="17" fill="#000"/><rect x="17" width="17" height="17" fill="#009FE3"/>
+        <rect y="17" width="17" height="17" fill="#FFED00"/><rect x="17" y="17" width="17" height="17" fill="#E30613"/>
+        <path d="M0 8.5a8.5 8.5 0 0 0 17 0z" fill="#009FE3"/><circle cx="8.5" cy="25.5" r="6" fill="#E30613"/><circle cx="25.5" cy="25.5" r="6" fill="#FFED00"/>
+      </svg>
+      <div><b>Guía ABTR</b><span>Manual del administrador</span></div>
+    </div>
+    <div class="toc-title">Índice</div>
+    <nav class="toc">
+      <a href="#s1"><span class="k">1</span> Antes de empezar</a>
+      <a href="#s2"><span class="k">2</span> Puesta a punto inicial</a>
+      <a href="#s3" class="star"><span class="k">3</span> Gestionar socios ★</a>
+      <a href="#s4" class="star"><span class="k">4</span> Campos personalizados ★</a>
+      <a href="#s5"><span class="k">5</span> Cuotas y pagos</a>
+      <a href="#s6"><span class="k">6</span> Equipación e inventario</a>
+      <a href="#s7"><span class="k">7</span> Eventos y carreras</a>
+      <a href="#s8"><span class="k">8</span> Resultados (CSV)</a>
+      <a href="#s9"><span class="k">9</span> La web pública</a>
+      <a href="#s10" class="star"><span class="k">10</span> Automatizar el club ★</a>
+      <a href="#s11"><span class="k">11</span> Problemas frecuentes</a>
+      <a href="#s12"><span class="k">12</span> Glosario</a>
+      <a href="#s13"><span class="k">13</span> Chuleta imprimible</a>
+    </nav>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+  <div class="wrap">
+
+    <!-- COVER -->
+    <div class="cover">
+      <svg class="dots" width="180" height="180" viewBox="0 0 34 34" aria-hidden="true">
+        <rect width="17" height="17" fill="#111"/><rect x="17" width="17" height="17" fill="#009FE3"/>
+        <rect y="17" width="17" height="17" fill="#FFED00"/><rect x="17" y="17" width="17" height="17" fill="#E30613"/>
+      </svg>
+      <span class="kicker">Manual paso a paso</span>
+      <h1>Guía para gestionar el club</h1>
+      <p class="lead" style="color:#c7cedb">Todo lo que necesitas para llevar el Club de corredores Albatera desde cero, explicado sin tecnicismos. Si sabes usar el WhatsApp, sabes usar esto.</p>
+      <div class="who">
+        <span>👋 Para gente no técnica</span>
+        <span>🖱️ Con simulaciones de cada pantalla</span>
+        <span>⭐ Enfoque en socios y automatización</span>
+      </div>
+    </div>
+
+    <div class="call tip" style="margin-top:22px"><span class="ic">🧭</span><b>Cómo usar esta guía.</b> Usa el índice de la izquierda para saltar a lo que necesites. No hace falta leerla entera de una vez: los apartados <b>1</b> y <b>2</b> se hacen una sola vez al principio; el resto es del día a día. Los apartados con ⭐ son los más importantes.</div>
+
+    <h3>Leyenda de iconos</h3>
+    <div class="grid2">
+      <div class="call tip" style="margin:6px 0"><span class="ic">💡</span><b>Consejo:</b> un truco para hacerlo mejor.</div>
+      <div class="call warn" style="margin:6px 0"><span class="ic">⚠️</span><b>Cuidado:</b> algo que conviene no equivocar.</div>
+      <div class="call auto" style="margin:6px 0"><span class="ic">⚙️</span><b>Lo hace solo:</b> el sistema se encarga, tú no.</div>
+      <div class="call trick" style="margin:6px 0"><span class="ic">✅</span><b>Truco:</b> forma rápida de hacerlo.</div>
+    </div>
+    <div class="badges" style="margin-top:14px">
+      <span class="badge time">⏱️ Tiempo estimado</span>
+      <span class="badge easy">Fácil</span>
+      <span class="badge med">Requiere atención</span>
+      <span class="badge once">Se hace una vez</span>
+      <span class="badge star">★ Importante</span>
+    </div>
+
+    <!-- ============ 1 · ANTES DE EMPEZAR ============ -->
+    <section id="s1">
+      <h2><span class="num">1</span> Antes de empezar</h2>
+      <p class="lead">Dos ideas y ya puedes empezar: <b>dónde entrar</b> y <b>las dos pantallas</b> que vas a usar.</p>
+
+      <h3>Las dos "puertas" del sistema</h3>
+      <p>El sistema tiene dos formas de entrar. No te agobies: para el día a día usarás casi siempre la segunda.</p>
+      <div class="grid2">
+        <div class="box">
+          <span class="pill blue">El Panel · /admin</span>
+          <p style="margin-top:10px">La sala de máquinas. Aquí está <b>todo</b>: se configura el club, se crean eventos, noticias, tipos de socio, equipación… Es completo pero tiene muchos botones.</p>
+          <p class="badges"><span class="badge once">Sobre todo al principio</span></p>
+        </div>
+        <div class="box" style="border-color:#bce6fb;background:var(--blue-50)">
+          <span class="pill blue-soft">Gestión fácil · /gestion</span>
+          <p style="margin-top:10px">Tu pantalla del día a día. Buscas un socio y gestionas <b>todo lo suyo en una sola pantalla</b>: cuota, equipación, datos… Grande, claro y sin líos.</p>
+          <p class="badges"><span class="badge star">★ La que más usarás</span></p>
+        </div>
+      </div>
+      <div class="call trick"><span class="ic">✅</span><b>Regla sencilla:</b> ¿es del día a día de un socio (cobrar cuota, entregar una camiseta)? → <b>/gestion</b>. ¿Es configurar algo o crear contenido de la web? → <b>/admin</b>.</div>
+
+      <h3>Cómo entrar (login)</h3>
+      <div class="badges"><span class="badge time">⏱️ 1 min</span><span class="badge easy">Fácil</span></div>
+      <ol class="steps">
+        <li>En el navegador (Chrome, Safari…) escribe la dirección de la web y añade <code>/admin</code> al final. Ejemplo: <code>tuclub.com/admin</code>.</li>
+        <li>Escribe tu <b>correo</b> y tu <b>contraseña</b> y pulsa <b>Iniciar sesión</b>.</li>
+        <li>¡Ya estás dentro! Verás el menú del panel a la izquierda.</li>
+      </ol>
+      <div class="sim">
+        <div class="bar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="url">tuclub.com/admin</span></div>
+        <div class="body" style="max-width:360px;margin:0 auto">
+          <div style="font-weight:900;font-size:20px;margin-bottom:12px">Iniciar sesión</div>
+          <div class="fieldrow"><label>Correo electrónico</label><span class="inp">admin@abtr.run</span></div>
+          <div class="fieldrow"><label>Contraseña</label><span class="inp">••••••••••</span></div>
+          <div class="rel" style="margin-top:12px">
+            <button class="btn blue" style="width:100%;justify-content:center">Iniciar sesión</button>
+          </div>
+        </div>
+        <div class="cap">Simulación de la pantalla de acceso. Todo el panel está en español.</div>
+      </div>
+      <div class="call tip"><span class="ic">💡</span><b>Consejo:</b> guarda la página en favoritos para no tener que escribir la dirección cada vez.</div>
+      <div class="call warn"><span class="ic">⚠️</span><b>Cambia la contraseña de ejemplo.</b> Si te han dado <code>changeme123</code>, cámbiala cuanto antes: entra en <b>Administración → Usuarios (staff)</b>, ábrete a ti mismo y pon una contraseña nueva.</div>
+
+      <h3>El mapa del menú (dónde está cada cosa)</h3>
+      <p>En el panel, el menú de la izquierda agrupa todo en <b>5 secciones</b>. Este es el mapa completo:</p>
+      <div class="sim">
+        <div class="bar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="url">tuclub.com/admin</span></div>
+        <div class="adminmenu">
+          <div class="side">
+            <div class="grp">Club</div>
+            <div class="it on">Socios</div><div class="it">Cuotas</div><div class="it">Datos del socio</div><div class="it">Inscripciones</div><div class="it">Patrocinadores</div>
+            <div class="grp">Contenido</div>
+            <div class="it">Noticias</div><div class="it">Eventos</div><div class="it">Resultados</div><div class="it">Equipo</div><div class="it">Página de inicio</div>
+            <div class="grp">Configuración</div>
+            <div class="it">Temporadas</div><div class="it">Tipos de socio</div><div class="it">Campos del socio</div><div class="it">Escalas de tallas · Tallas</div>
+            <div class="grp">Equipación</div>
+            <div class="it">Catálogo · Existencias</div><div class="it">Entregas · Packs</div>
+            <div class="grp">Administración</div>
+            <div class="it">Usuarios (staff)</div><div class="it">Mensajes de contacto</div><div class="it">Ajustes del sitio</div>
+          </div>
+          <div class="main">
+            <div style="font-weight:900;font-size:17px">Socios</div>
+            <p style="color:var(--muted);font-size:13.5px">Aquí aparece la lista de todos los socios. Pulsa <b>Crear nuevo</b> para añadir uno, o sobre un nombre para abrir su ficha.</p>
+            <div class="tbl" style="margin-top:8px"><table>
+              <tr><th>Nombre</th><th>Email</th><th>Cuota</th></tr>
+              <tr><td>Ana Ruiz</td><td>ana@…</td><td><span class="pill blue-soft">Al corriente</span></td></tr>
+              <tr><td>Juan Gil</td><td>juan@…</td><td><span class="pill yellow">Pendiente</span></td></tr>
+            </table></div>
+          </div>
+        </div>
+        <div class="cap">El menú lateral del panel, con sus 5 grupos. La sección resaltada en azul es la que tienes abierta.</div>
+      </div>
+      <div class="call tip"><span class="ic">💡</span><b>Truco para orientarte:</b> lo que es <b>de personas</b> está en <b>Club</b>; lo que <b>configuras una vez</b> está en <b>Configuración</b> y <b>Equipación</b>; lo de <b>la web pública</b> está en <b>Contenido</b>.</div>
+      <a class="toplink" href="#s1">↑ Volver arriba</a>
+    </section>
+
+    <!-- ============ 2 · PUESTA A PUNTO INICIAL ============ -->
+    <section id="s2">
+      <h2><span class="num">2</span> Puesta a punto inicial</h2>
+      <div class="badges"><span class="badge time">⏱️ 20–30 min</span><span class="badge once">Se hace una vez</span><span class="badge med">Requiere atención</span></div>
+      <p class="lead">Antes de empezar a meter socios, deja el sistema "amueblado". Sigue este orden — cada paso apoya al siguiente.</p>
+
+      <div class="call warn"><span class="ic">⚠️</span><b>Hazlo en este orden.</b> Por ejemplo, las tallas tienen que existir antes que la equipación, y la temporada antes que las cuotas.</div>
+
+      <ol class="steps">
+        <li><b>Crea la temporada actual.</b> <span class="pill ghost">Configuración → Temporadas → Crear nuevo</span><br>
+          Pon el nombre (ej. <code>2025/2026</code>) y marca la casilla <b>Temporada actual</b>. Es el "año" al que se asocian cuotas y equipación.
+          <div class="call auto" style="margin-top:8px"><span class="ic">⚙️</span><b>Lo hace solo:</b> si marcas una nueva como actual, la anterior deja de serlo automáticamente.</div>
+        </li>
+        <li><b>Crea los tipos de socio.</b> <span class="pill ghost">Configuración → Tipos de socio</span><br>
+          Ej.: <i>Adulto</i> (de pago, 30 €), <i>Infantil</i> (15 €), <i>Honorífico</i> (gratis). Marca <b>¿Requiere pago?</b> según cada uno, y <b>Mostrar en la web</b> si quieres que aparezca en "Hazte socio".
+        </li>
+        <li><b>Define los campos del socio que quieras llevar.</b> <span class="pill ghost">Configuración → Campos del socio</span><br>
+          Cualquier dato: talla de zapatilla, alergias, contacto de emergencia… (esto es tan potente que tiene su propio apartado: ver <a href="#s4">4 · Campos personalizados</a>).
+        </li>
+        <li><b>Crea las escalas de tallas y las tallas.</b> <span class="pill ghost">Configuración → Escalas de tallas / Tallas</span><br>
+          Una escala "Ropa" con tallas XS–XXL; si vendes calzado, otra escala "Calzado" con números. Así cada prenda usa las tallas que le tocan.
+        </li>
+        <li><b>Rellena el catálogo de equipación.</b> <span class="pill ghost">Equipación → Catálogo de equipación</span><br>
+          Camiseta, pantalón, sudadera… Añade los artículos que repartáis. A cada uno le asignas su escala de tallas.
+        </li>
+        <li><b>Mete las existencias (stock).</b> <span class="pill ghost">Equipación → Existencias</span><br>
+          Cuántas unidades tienes de cada artículo y talla (ej. 20 camisetas talla M).
+          <div class="call auto" style="margin-top:8px"><span class="ic">⚙️</span><b>Lo hace solo:</b> cuando entregues una prenda a un socio, el stock baja solo. Tú no restas nada.</div>
+        </li>
+        <li><b>Crea el pack de la temporada.</b> <span class="pill ghost">Equipación → Packs de equipación</span><br>
+          Es "lo que le corresponde a cada socio": ej. 1 camiseta + 1 pantalón. Con esto, el sistema sabe <b>qué le falta por entregar a cada uno</b>.
+        </li>
+      </ol>
+      <div class="call trick"><span class="ic">✅</span><b>Cuando termines estos 7 pasos, el club ya está listo.</b> A partir de aquí, todo es del día a día y mucho más rápido.</div>
+      <a class="toplink" href="#s2">↑ Volver arriba</a>
+    </section>
+
+    <!-- ============ 3 · GESTIONAR SOCIOS ★ ============ -->
+    <section id="s3">
+      <h2 class="star"><span class="num">3</span> Gestionar la información de los socios</h2>
+      <div class="badges"><span class="badge star">★ El apartado más importante</span><span class="badge easy">Fácil</span></div>
+      <p class="lead">Aquí está el corazón del sistema: una pantalla donde ves y cambias <b>absolutamente todo</b> de una persona. La usarás cada semana.</p>
+
+      <h3>Cómo se da de alta un socio (dos formas)</h3>
+      <div class="grid2">
+        <div class="box">
+          <b>A · El socio se apunta solo</b>
+          <p style="margin-top:6px">Entra en la web, pulsa <b>Hazte socio</b>, rellena sus datos y elige el tipo. Aparece en tu lista con la cuota <span class="pill yellow">Pendiente</span>, listo para que confirmes el pago.</p>
+          <div class="call auto" style="margin:6px 0 0"><span class="ic">⚙️</span><b>Lo hace solo:</b> le crea la cuota de la temporada actual, en pendiente.</div>
+        </div>
+        <div class="box">
+          <b>B · Lo das de alta tú</b>
+          <p style="margin-top:6px">En el panel: <span class="pill ghost">Club → Socios → Crear nuevo</span>. Pones nombre, email y una contraseña, guardas, y ya tiene ficha.</p>
+        </div>
+      </div>
+
+      <h3>Abrir la ficha "todo en una pantalla"</h3>
+      <div class="badges"><span class="badge time">⏱️ al momento</span></div>
+      <ol class="steps">
+        <li>Arriba a la derecha de la web, pulsa el botón azul <b>Gestión</b> (solo lo ves tú, el staff).</li>
+        <li>Se abre la <b>lista de socios</b>. Escribe en el buscador (por nombre, email o nº de federación).</li>
+        <li>Pulsa sobre la persona. Se abre <b>su ficha completa</b>. Todo lo de abajo se hace desde ahí.</li>
+      </ol>
+
+      <div class="sim">
+        <div class="bar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="url">tuclub.com/gestion</span></div>
+        <div class="body">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="font-weight:900;font-size:18px">Gestión de socios</div>
+            <span class="pill blue">Importar resultados</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px"><span class="inp" style="flex:1">🔎 Buscar por nombre, email…</span><button class="btn dark">Buscar</button></div>
+          <div style="margin-top:10px;border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
+            <div><b>Ana Ruiz</b><div style="font-size:13px;color:var(--muted)">ana@correo.com · Senior</div></div>
+            <span class="pill yellow">Cuota pendiente</span>
+          </div>
+        </div>
+        <div class="cap">La lista de gestión. Buscas, y pulsas sobre la persona para abrir su ficha.</div>
+      </div>
+
+      <h3>La ficha del socio, bloque a bloque</h3>
+      <p>Esta es <b>la pantalla que más vas a usar</b>. Tiene cinco bloques. Vamos uno a uno.</p>
+
+      <div class="sim">
+        <div class="bar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="url">tuclub.com/gestion/…</span></div>
+        <div class="body">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <div style="font-weight:900;font-size:22px">ANA RUIZ</div>
+            <span class="pill yellow">Cuota pendiente</span>
+          </div>
+          <div style="font-size:13px;color:var(--muted)">ana@correo.com · Senior · Temporada 2025/2026</div>
+
+          <!-- Datos -->
+          <div style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:14px">
+            <b>①&nbsp; Datos</b>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+              <span class="inp">Ana Ruiz</span><span class="inp">Teléfono</span>
+              <span class="inp">Nº federación</span><span class="inp">Categoría: Senior ▾</span>
+            </div>
+            <button class="btn dark" style="margin-top:8px">Guardar datos</button>
+          </div>
+
+          <!-- Cuota -->
+          <div style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px" class="rel">
+            <b>②&nbsp; Cuota</b> <span style="color:var(--muted);font-size:12.5px">· el cobro se hace fuera de la web</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+              <span class="btn blue">Pagada</span><span class="btn ghost">Pendiente</span><span class="btn ghost">Exenta (no paga)</span>
+            </div>
+            <div class="point" style="right:14px;top:44px">👈 un clic y queda al corriente</div>
+          </div>
+
+          <!-- Equipación -->
+          <div style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px">
+            <b>③&nbsp; Equipación</b>
+            <div class="yellowbox" style="margin-top:8px"><b>Le falta por entregar esta temporada:</b> <span class="pill ghost">Pantalón corto</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:14px">
+              <span><b>Camiseta oficial</b> · talla M · <span style="color:var(--muted)">Entregada</span></span><span class="btn ghost" style="padding:5px 12px">Quitar</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><span class="inp">Artículo… ▾</span><span class="inp">Talla… ▾</span><span class="btn red">Entregar</span></div>
+          </div>
+
+          <!-- Campos personalizados -->
+          <div style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px">
+            <b>④&nbsp; Campos personalizados</b>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+              <span class="inp">Talla de zapatilla: 42</span><span class="inp">Alergias: —</span>
+            </div>
+            <button class="btn dark" style="margin-top:8px">Guardar campos</button>
+          </div>
+
+          <!-- Participación -->
+          <div style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px">
+            <b>⑤&nbsp; Participación</b> <span style="color:var(--muted);font-size:12.5px">(solo lectura)</span>
+            <div style="font-size:13.5px;color:var(--slate);margin-top:6px">Inscripciones: — · Marcas: ALBATERUN 2026 · 12º · 00:42:15</div>
+          </div>
+        </div>
+        <div class="cap">Simulación de la ficha real. Cada bloque se guarda por separado; no hay que rellenar todo de golpe.</div>
+      </div>
+
+      <div class="tbl"><table>
+        <tr><th>Bloque</th><th>Qué haces</th></tr>
+        <tr><td><b>① Datos</b></td><td>Nombre, teléfono, nº de federación y categoría. Pulsa <b>Guardar datos</b>.</td></tr>
+        <tr><td><b>② Cuota</b></td><td>Un clic en <b>Pagada / Pendiente / Exenta</b>. Se marca al instante.</td></tr>
+        <tr><td><b>③ Equipación</b></td><td>Ves lo entregado y <b>lo que le falta</b> (caja amarilla). Para entregar: elige artículo + talla → <b>Entregar</b>.</td></tr>
+        <tr><td><b>④ Campos personalizados</b></td><td>Cualquier dato extra que lleve el club (ver apartado 4). Pulsa <b>Guardar campos</b>.</td></tr>
+        <tr><td><b>⑤ Participación</b></td><td>Solo mirar: en qué se ha inscrito y sus marcas.</td></tr>
+      </table></div>
+
+      <div class="call auto"><span class="ic">⚙️</span><b>Lo hace solo:</b> al marcar la cuota <b>Pagada</b>, arriba cambia a <span class="pill blue-soft">Al corriente</span> automáticamente. Y al <b>Entregar</b> equipación, baja el stock y desaparece de "lo que le falta". Tú solo pulsas.</div>
+
+      <h3>Simulación completa: «Ana se hace socia y recoge su equipación»</h3>
+      <ol class="steps">
+        <li>Ana se apunta en la web (<b>Hazte socio</b>) → aparece en tu lista con <span class="pill yellow">pendiente</span>.</li>
+        <li>Ana te paga la cuota por transferencia. Abres su ficha → bloque <b>Cuota</b> → clic en <b>Pagada</b>. <span style="color:var(--muted)">(Queda "Al corriente".)</span></li>
+        <li>Viene al local a por su ropa. Bloque <b>Equipación</b>: ves que le toca camiseta y pantalón. Eliges <i>Camiseta · M</i> → <b>Entregar</b>. Repites con el pantalón.</li>
+        <li>Le apuntas su talla de zapatilla en <b>Campos personalizados</b> → <b>Guardar</b>.</li>
+        <li>Listo. Ana entra en su zona privada y ve su cuota al día y su equipación. <b>No has tocado ni un stock ni una hoja de cálculo.</b></li>
+      </ol>
+      <div class="call warn"><span class="ic">⚠️</span><b>¿Te equivocaste al entregar?</b> No pasa nada: pulsa <b>Quitar</b> junto a esa entrega y el stock vuelve a subir solo.</div>
+      <a class="toplink" href="#s3">↑ Volver arriba</a>
+    </section>
+
+    <!-- ============ 4 · CAMPOS PERSONALIZADOS ★ ============ -->
+    <section id="s4">
+      <h2 class="star"><span class="num">4</span> Campos personalizados</h2>
+      <div class="badges"><span class="badge star">★ La joya del sistema</span><span class="badge easy">Fácil</span></div>
+      <p class="lead">¿Quieres apuntar algo de cada socio que hoy no existe? <b>Puedes inventar el campo tú mismo, sin llamar a ningún informático.</b></p>
+
+      <p>Ejemplos de cosas que puedes empezar a guardar hoy: <b>alergias</b>, <b>talla de zapatilla</b>, <b>contacto de emergencia</b>, <b>fecha del reconocimiento médico</b>, <b>consentimiento de imagen</b>, <b>km acumulados</b>… lo que se te ocurra.</p>
+
+      <h3>Crear un campo nuevo (paso a paso)</h3>
+      <div class="badges"><span class="badge time">⏱️ 2 min</span></div>
+      <ol class="steps">
+        <li>Ve a <span class="pill ghost">Configuración → Campos del socio → Crear nuevo</span>.</li>
+        <li>Escribe el <b>nombre</b> del campo (ej. <i>Contacto de emergencia</i>).</li>
+        <li>Elige el <b>tipo de dato</b>: texto corto, texto largo, número, fecha, sí/no, lista de opciones o archivo.</li>
+        <li>Decide dos casillas importantes: <b>¿Lo ve el socio?</b> y <b>¿Puede editarlo el socio?</b></li>
+        <li>Guarda. <b>Ya aparece</b> en la ficha de todos los socios (bloque "Campos personalizados").</li>
+      </ol>
+
+      <div class="sim">
+        <div class="bar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="url">/admin · Campos del socio</span></div>
+        <div class="body" style="max-width:440px">
+          <div class="fieldrow"><label>Nombre del campo</label><span class="inp">Contacto de emergencia</span></div>
+          <div class="fieldrow"><label>Tipo de dato</label><span class="inp">Texto corto ▾</span></div>
+          <div style="display:flex;gap:18px;margin:10px 0;font-size:14px">
+            <span>☑ Visible para el socio</span><span>☐ Editable por el socio</span>
+          </div>
+          <button class="btn dark">Guardar</button>
+        </div>
+        <div class="cap">Con esto, "Contacto de emergencia" ya se puede rellenar en cada ficha. Sin tocar código.</div>
+      </div>
+
+      <div class="grid2">
+        <div class="call tip" style="margin:8px 0"><span class="ic">💡</span><b>Visible + editable:</b> ideal para datos que el propio socio mantiene (su talla, su teléfono de emergencia).</div>
+        <div class="call warn" style="margin:8px 0"><span class="ic">⚠️</span><b>Solo visible (no editable):</b> para cosas que decide el club (ej. "Consentimiento de imagen firmado").</div>
+      </div>
+      <div class="call auto"><span class="ic">⚙️</span><b>Lo hace solo:</b> los campos marcados como visibles aparecen en la zona privada del socio; los editables, además, los puede cambiar él desde "Editar mi perfil".</div>
+      <a class="toplink" href="#s4">↑ Volver arriba</a>
+    </section>
+
+    <!-- ============ 5 · CUOTAS Y PAGOS ============ -->
+    <section id="s5">
+      <h2><span class="num">5</span> Cuotas y pagos</h2>
+      <div class="badges"><span class="badge easy">Fácil</span></div>
+      <p class="lead">El sistema <b>no cobra por internet</b>: tú cobras como siempre (banco, Bizum, efectivo) y aquí solo <b>anotas</b> quién está al día.</p>
+
+      <ul class="norm">
+        <li><b>Temporada:</b> cada año deportivo es una "temporada". Las cuotas se guardan por temporada, así queda el histórico limpio.</li>
+        <li><b>Tipos de socio:</b> defines los que quieras: de pago (con importe) o gratis (honoríficos, infantiles…).</li>
+        <li><b>Estado de cada socio:</b> en su ficha, un clic → <span class="pill blue">Pagada</span> · <span class="pill yellow">Pendiente</span> · <span class="pill ghost">Exenta</span>.</li>
+      </ul>
+      <div class="call auto"><span class="ic">⚙️</span><b>Lo hace solo:</b> al marcar la cuota, el estado del socio (arriba en su ficha y en la lista) se actualiza automáticamente. No hay que tocarlo en dos sitios.</div>
+      <div class="call tip"><span class="ic">💡</span><b>Para ver quién debe:</b> en el panel, <span class="pill ghost">Club → Cuotas</span>, y filtra por estado "Pendiente". Ahí tienes tu lista de cobros.</div>
+      <a class="toplink" href="#s5">↑ Volver arriba</a>
+    </section>
+
+    <!-- ============ 6 · EQUIPACIÓN ============ -->
+    <section id="s6">
+      <h2><span class="num">6</span> Equipación e inventario</h2>
+      <div class="badges"><span class="badge easy">Fácil</span></div>
+      <p class="lead">Llevar la cuenta de camisetas, pantalones y demás sin volverte loco con hojas de cálculo.</p>
+
+      <div class="tbl"><table>
+        <tr><th>Dónde</th><th>Para qué</th></tr>
+        <tr><td>Catálogo de equipación</td><td>Los artículos que repartís (camiseta, pantalón…).</td></tr>
+        <tr><td>Escalas de tallas · Tallas</td><td>Los grupos de tallas (XS–XXL, números de calzado…).</td></tr>
+        <tr><td>Existencias</td><td>Cuántas unidades tienes de cada artículo y talla.</td></tr>
+        <tr><td>Packs de equipación</td><td>Lo que le corresponde a cada socio → permite el aviso "le falta".</td></tr>
+        <tr><td>Entregas</td><td>El registro de qué se le ha dado a quién (se rellena solo al entregar desde la ficha).</td></tr>
+      </table></div>
+
+      <div class="call auto"><span class="ic">⚙️</span><b>Lo hace solo:</b> cada vez que entregas una prenda desde la ficha del socio, las <b>Existencias</b> bajan una unidad. Nunca restas a mano.</div>
+      <div class="call tip"><span class="ic">💡</span><b>¿Cuántas camisetas M me quedan?</b> Entra en <span class="pill ghost">Equipación → Existencias</span> y mira la columna <b>Quedan</b>. Puedes ordenar por esa columna para ver de qué te estás quedando sin.</div>
+      <div class="call trick"><span class="ic">✅</span><b>Reparto rápido:</b> el mejor sitio para entregar es la ficha del socio (apartado 3, bloque Equipación): eliges artículo + talla y "Entregar". Ahí mismo ves lo que le falta.</div>
+      <a class="toplink" href="#s6">↑ Volver arriba</a>
+    </section>
+
+    <!-- ============ 7 · EVENTOS ============ -->
+    <section id="s7">
+      <h2><span class="num">7</span> Eventos y carreras</h2>
+      <div class="badges"><span class="badge easy">Fácil</span></div>
+      <p class="lead">Anuncia carreras y quedadas, y abre las inscripciones cuando quieras.</p>
+      <ol class="steps">
+        <li><span class="pill ghost">Contenido → Eventos → Crear nuevo</span>.</li>
+        <li>Pon <b>título</b>, <b>tipo</b> (Carrera principal / Social Run / Evento de club), <b>fecha</b> y <b>lugar</b>.</li>
+        <li>Marca <b>Inscripciones abiertas</b> cuando quieras que la gente pueda apuntarse.</li>
+        <li>Opcional: pon un <b>aforo</b> (nº de plazas) y las <b>categorías</b> admitidas.</li>
+      </ol>
+      <div class="call auto"><span class="ic">⚙️</span><b>Lo hace solo:</b> si pones aforo, el sistema no deja apuntarse a más gente de la cuenta, y evita inscripciones duplicadas.</div>
+      <div class="call tip"><span class="ic">💡</span><b>Ver quién se ha apuntado:</b> <span class="pill ghost">Club → Inscripciones</span>, filtrando por el evento.</div>
+      <a class="toplink" href="#s7">↑ Volver arriba</a>
+    </section>
+
+    <!-- ============ 8 · RESULTADOS CSV ★ ============ -->
+    <section id="s8">
+      <h2><span class="num">8</span> Resultados (importar por CSV)</h2>
+      <div class="badges"><span class="badge star">★ Ahorra muchísimo tiempo</span><span class="badge time">⏱️ 5 min por carrera</span></div>
+      <p class="lead">Tras una carrera tendrás una hoja con cientos de tiempos. En vez de meterlos uno a uno, <b>los subes todos de golpe</b> y el sistema enlaza a cada socio por su email.</p>
+
+      <h3>Qué es un CSV</h3>
+      <p>Es una hoja de cálculo guardada en un formato sencillo (una fila por corredor, columnas separadas por comas). Excel y Google Sheets lo exportan con <i>"Guardar como → CSV"</i>.</p>
+
+      <h3>Paso a paso</h3>
+      <ol class="steps">
+        <li>En la web, botón <b>Gestión</b> → <b>Importar resultados</b> (o <code>/gestion/importar-resultados</code>).</li>
+        <li>Pulsa <b>Descargar plantilla</b> para tener el formato exacto.</li>
+        <li>Rellena la plantilla con los resultados. Este es el formato:</li>
+      </ol>
+      <span class="kbd"><span class="c">dorsal,posicion,nombre,email,categoria,marca</span>
+101,1,Ana Ruiz,ana@correo.com,senior,00:38:20
+102,2,Corredor externo,,popular,00:41:05
+103,3,Juan Gil,juan@correo.com,master,00:44:12</span>
+      <ul class="clean">
+        <li>El <b>email</b> es opcional. Si coincide con un socio, se enlaza a su ficha automáticamente.</li>
+        <li>Si no hay email (o es de alguien de fuera), el resultado se guarda igual, como texto.</li>
+      </ul>
+      <ol class="steps" start="4" style="counter-reset:s 3">
+        <li>Elige la <b>carrera</b> en el desplegable.</li>
+        <li>Pega el CSV (o sube el archivo) y pulsa <b>Previsualizar</b>.</li>
+        <li>Revisa la tabla: te dice a quién enlazará y quién queda como texto. Si está bien, pulsa <b>Importar</b>.</li>
+      </ol>
+
+      <div class="sim">
+        <div class="bar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="url">/gestion/importar-resultados</span></div>
+        <div class="body">
+          <div style="font-weight:800;margin-bottom:6px">2 filas · 1 se enlazará a un socio · 1 como texto · 0 con error</div>
+          <div class="tbl"><table>
+            <tr><th>Dorsal</th><th>Nombre</th><th>Marca</th><th>Socio</th></tr>
+            <tr><td class="mono">101</td><td><b>Ana Ruiz</b></td><td class="mono">00:38:20</td><td><span class="pill blue-soft">Ana Ruiz</span></td></tr>
+            <tr><td class="mono">102</td><td><b>Corredor externo</b></td><td class="mono">00:41:05</td><td style="color:var(--muted)">sin enlazar</td></tr>
+          </table></div>
+          <button class="btn red" style="margin-top:10px">Importar 2 resultados</button>
+        </div>
+        <div class="cap">La previsualización antes de importar: verde = se enlaza a un socio; gris = queda como texto libre.</div>
+      </div>
+      <div class="call auto"><span class="ic">⚙️</span><b>Lo hace solo:</b> el enlace por email. Si Ana es socia, su marca aparecerá sola en su ficha (bloque Participación) y en su zona privada.</div>
+      <div class="call tip"><span class="ic">💡</span><b>También al revés:</b> en la web pública, la página de <b>Resultados</b> tiene un botón <b>Descargar CSV</b> para exportar lo que ya hay.</div>
+      <a class="toplink" href="#s8">↑ Volver arriba</a>
+    </section>
+
+    <!-- ============ 9 · WEB PÚBLICA ============ -->
+    <section id="s9">
+      <h2><span class="num">9</span> La web pública (contenido)</h2>
+      <div class="badges"><span class="badge easy">Fácil</span></div>
+      <p class="lead">Todo lo que ven los vecinos y patrocinadores lo controlas desde el grupo <b>Contenido</b> y <b>Administración</b>.</p>
+      <div class="tbl"><table>
+        <tr><th>Quieres…</th><th>Vas a…</th></tr>
+        <tr><td>Publicar una noticia</td><td>Contenido → <b>Noticias</b> (ponla en "Publicado" para que salga).</td></tr>
+        <tr><td>Presentar al equipo/junta</td><td>Contenido → <b>Equipo</b> (foto, cargo, orden).</td></tr>
+        <tr><td>Colocar patrocinadores</td><td>Club → <b>Patrocinadores</b> (logo, nivel, y "global" para que salgan en toda la web).</td></tr>
+        <tr><td>Cambiar la portada</td><td>Contenido → <b>Página de inicio</b> (título, foto y "sobre el club").</td></tr>
+        <tr><td>Email, teléfono, redes, logos</td><td>Administración → <b>Ajustes del sitio</b>.</td></tr>
+        <tr><td>Leer mensajes del formulario de contacto</td><td>Administración → <b>Mensajes de contacto</b>.</td></tr>
+      </table></div>
+      <div class="call tip"><span class="ic">💡</span><b>Consejo:</b> las fechas, lugares y precios que pongas se ven de un vistazo en la web. Escríbelos claros y sin jerga.</div>
+      <a class="toplink" href="#s9">↑ Volver arriba</a>
+    </section>
+
+    <!-- ============ 10 · AUTOMATIZAR ★ ============ -->
+    <section id="s10">
+      <h2 class="star"><span class="num">10</span> Automatizar la gestión del club</h2>
+      <div class="badges"><span class="badge star">★ Trabaja menos, mejor</span></div>
+      <p class="lead">"Automatizar" aquí significa dos cosas: <b>lo que el sistema hace solo</b> (tú no tocas nada) y <b>rutinas</b> para que la gestión sea siempre igual de fácil.</p>
+
+      <h3>Lo que el sistema hace por ti (sin que hagas nada)</h3>
+      <div class="tbl"><table>
+        <tr><th>Situación</th><th>Lo que pasa solo</th></tr>
+        <tr><td>Marcas una cuota como <b>Pagada</b></td><td>El socio pasa a "Al corriente" en su ficha, en la lista y en su zona privada.</td></tr>
+        <tr><td><b>Entregas</b> una prenda</td><td>Baja el stock una unidad y desaparece de "lo que le falta".</td></tr>
+        <tr><td>Un socio tiene un <b>pack</b> asignado</td><td>El sistema calcula y muestra <b>qué le falta por recoger</b>.</td></tr>
+        <tr><td><b>Importas</b> resultados con email</td><td>Cada marca se enlaza sola a la ficha del socio correspondiente.</td></tr>
+        <tr><td>Un socio se apunta en la web</td><td>Se le crea la cuota de la temporada en "pendiente", lista para confirmar.</td></tr>
+        <tr><td>Marcas una temporada como <b>actual</b></td><td>La anterior deja de serlo automáticamente.</td></tr>
+      </table></div>
+
+      <h3>Rutinas del club (hazlas siempre igual)</h3>
+      <div class="grid2">
+        <div class="box">
+          <b>🟢 Apertura de temporada</b>
+          <ul class="clean" style="margin-top:6px">
+            <li>Crea la nueva <b>Temporada</b> y márcala actual.</li>
+            <li>Revisa <b>Tipos de socio</b> y precios.</li>
+            <li>Crea el <b>Pack</b> de la temporada.</li>
+            <li>Actualiza <b>Existencias</b> con la ropa nueva.</li>
+          </ul>
+        </div>
+        <div class="box">
+          <b>🔵 Semana de carrera</b>
+          <ul class="clean" style="margin-top:6px">
+            <li>Crea el <b>Evento</b> y abre inscripciones.</li>
+            <li>Comparte el enlace por redes.</li>
+            <li>Tras la carrera, <b>importa resultados</b> por CSV.</li>
+          </ul>
+        </div>
+        <div class="box">
+          <b>🟡 Cada mes</b>
+          <ul class="clean" style="margin-top:6px">
+            <li>Revisa <b>Cuotas pendientes</b> y recuerda a quien deba.</li>
+            <li>Mira <b>Existencias</b> con stock bajo.</li>
+            <li>Publica una <b>Noticia</b>.</li>
+          </ul>
+        </div>
+        <div class="box">
+          <b>🔴 Altas en masa</b>
+          <ul class="clean" style="margin-top:6px">
+            <li>Resultados de una carrera → <b>CSV</b> (apartado 8).</li>
+            <li>Reparto de equipación → desde la ficha de cada socio.</li>
+            <li>Un dato nuevo para todos → crea un <b>campo personalizado</b>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Calendario de tareas (chuleta anual)</h3>
+      <div class="tbl"><table>
+        <tr><th>Cuándo</th><th>Tarea</th><th>Dónde</th></tr>
+        <tr><td>Inicio de temporada</td><td>Temporada, tipos, pack, stock</td><td>Configuración / Equipación</td></tr>
+        <tr><td>Al llegar un socio nuevo</td><td>Confirmar cuota, entregar equipación</td><td>/gestion (ficha)</td></tr>
+        <tr><td>Antes de cada carrera</td><td>Crear evento, abrir inscripciones</td><td>Contenido → Eventos</td></tr>
+        <tr><td>Después de cada carrera</td><td>Importar resultados CSV</td><td>/gestion/importar-resultados</td></tr>
+        <tr><td>Mensual</td><td>Cobros pendientes + stock bajo</td><td>Club → Cuotas / Equipación</td></tr>
+      </table></div>
+
+      <h3>Repartir el trabajo entre voluntarios</h3>
+      <p>Como todo el estado vive en el sistema (no en la cabeza de una persona ni en un Excel), varias personas pueden colaborar: una lleva cuotas, otra el reparto de ropa, otra el contenido de la web. Cada una entra con su usuario. Crea usuarios de staff en <span class="pill ghost">Administración → Usuarios (staff)</span>.</p>
+      <div class="call trick"><span class="ic">✅</span><b>La regla de oro:</b> anota las cosas en el sistema <b>en el momento</b> (cuando cobras, cuando entregas). Así nunca hay que "ponerse al día" y los datos siempre están bien.</div>
+      <a class="toplink" href="#s10">↑ Volver arriba</a>
+    </section>
+
+    <!-- ============ 11 · FAQ ============ -->
+    <section id="s11">
+      <h2><span class="num">11</span> Problemas frecuentes</h2>
+      <details class="faq"><summary>No encuentro una opción en el menú</summary><div class="a">Recuerda los grupos: personas → <b>Club</b>; configuración → <b>Configuración</b> y <b>Equipación</b>; web → <b>Contenido</b>; ajustes → <b>Administración</b>. Y para el día a día de un socio, usa el botón <b>Gestión</b>.</div></details>
+      <details class="faq"><summary>He olvidado mi contraseña</summary><div class="a">En la pantalla de acceso hay un enlace para recuperarla por email. Si no, pide a otro administrador que te la restablezca desde <b>Administración → Usuarios (staff)</b>.</div></details>
+      <details class="faq"><summary>Me he equivocado al entregar una prenda</summary><div class="a">Abre la ficha del socio → bloque <b>Equipación</b> → pulsa <b>Quitar</b> en esa entrega. El stock se recupera solo.</div></details>
+      <details class="faq"><summary>Un socio no aparece en la lista</summary><div class="a">Comprueba que se registró correctamente (Club → Socios) y prueba a buscarlo por email. Si se apuntó por la web, estará con la cuota en "pendiente".</div></details>
+      <details class="faq"><summary>El importador de resultados no enlaza a un socio</summary><div class="a">El enlace se hace por <b>email</b>: el del CSV debe ser exactamente el mismo con el que el socio está registrado. Si no coincide, el resultado se guarda igual, como texto.</div></details>
+      <details class="faq"><summary>¿Cómo doy de baja a un socio?</summary><div class="a">En su ficha marca la cuota como corresponda, o en el panel (Club → Socios) pon su estado en "Baja". El histórico se conserva.</div></details>
+      <details class="faq"><summary>¿El sistema cobra las cuotas por internet?</summary><div class="a">No. Tú cobras como siempre (banco, Bizum, efectivo) y aquí solo <b>anotas</b> quién está al día.</div></details>
+      <a class="toplink" href="#s11">↑ Volver arriba</a>
+    </section>
+
+    <!-- ============ 12 · GLOSARIO ============ -->
+    <section id="s12">
+      <h2><span class="num">12</span> Glosario (en cristiano)</h2>
+      <div class="tbl"><table>
+        <tr><th>Palabra</th><th>Qué significa</th></tr>
+        <tr><td><b>Socio</b></td><td>Persona apuntada al club, con su ficha y su zona privada.</td></tr>
+        <tr><td><b>Staff</b></td><td>Vosotros, los que gestionáis. Entráis al panel.</td></tr>
+        <tr><td><b>Temporada</b></td><td>El año deportivo (ej. 2025/2026). Todo se ordena por temporada.</td></tr>
+        <tr><td><b>Cuota</b></td><td>El pago de socio de una temporada. Aquí se anota si está pagada.</td></tr>
+        <tr><td><b>Tipo de socio</b></td><td>Categoría de socio (Adulto, Infantil, Honorífico…), de pago o gratis.</td></tr>
+        <tr><td><b>Pack</b></td><td>La equipación que le corresponde a un socio. Permite saber "qué le falta".</td></tr>
+        <tr><td><b>Entrega</b></td><td>Registro de que le has dado una prenda a un socio.</td></tr>
+        <tr><td><b>Existencias / Stock</b></td><td>Las unidades que te quedan de cada artículo y talla.</td></tr>
+        <tr><td><b>Campo personalizado</b></td><td>Un dato que tú inventas para guardar de los socios.</td></tr>
+        <tr><td><b>CSV</b></td><td>Una hoja de cálculo en formato sencillo, para subir muchos datos de golpe.</td></tr>
+        <tr><td><b>Panel / /admin</b></td><td>La herramienta completa de gestión y configuración.</td></tr>
+        <tr><td><b>Gestión / /gestion</b></td><td>La pantalla fácil del día a día por socio.</td></tr>
+      </table></div>
+      <a class="toplink" href="#s12">↑ Volver arriba</a>
+    </section>
+
+    <!-- ============ 13 · CHULETA ============ -->
+    <section id="s13">
+      <h2><span class="num">13</span> Chuleta imprimible</h2>
+      <p class="lead">Las tareas más comunes y dónde se hacen. Imprime esta página (Archivo → Imprimir) y tenla a mano.</p>
+      <div class="cheat">
+        <h3>Las 10 tareas de cada día</h3>
+        <div class="tbl"><table>
+          <tr><th>Quiero…</th><th>Voy a…</th></tr>
+          <tr><td>Cobrar/anotar una cuota</td><td>Gestión → ficha del socio → <b>Cuota → Pagada</b></td></tr>
+          <tr><td>Entregar equipación</td><td>Gestión → ficha → <b>Equipación → Entregar</b></td></tr>
+          <tr><td>Ver qué le falta a un socio</td><td>Gestión → ficha → caja amarilla en <b>Equipación</b></td></tr>
+          <tr><td>Buscar un socio</td><td>Gestión → buscador (nombre/email)</td></tr>
+          <tr><td>Dar de alta un socio</td><td>Panel → Club → <b>Socios → Crear nuevo</b></td></tr>
+          <tr><td>Crear un dato nuevo para todos</td><td>Panel → Configuración → <b>Campos del socio</b></td></tr>
+          <tr><td>Subir resultados de una carrera</td><td>Gestión → <b>Importar resultados</b> (CSV)</td></tr>
+          <tr><td>Crear una carrera / abrir inscripciones</td><td>Panel → Contenido → <b>Eventos</b></td></tr>
+          <tr><td>Publicar una noticia</td><td>Panel → Contenido → <b>Noticias</b></td></tr>
+          <tr><td>Ver cuántas prendas quedan</td><td>Panel → Equipación → <b>Existencias</b></td></tr>
+        </table></div>
+      </div>
+      <p style="text-align:center;color:var(--muted);font-size:13px;margin-top:30px">Guía del administrador · ABTR — Club de corredores Albatera</p>
+      <a class="toplink" href="#s1">↑ Volver al inicio</a>
+    </section>
+
+  </div>
+  </main>
+</div>
+</body>
+</html>
