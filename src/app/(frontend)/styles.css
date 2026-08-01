@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 @plugin '@tailwindcss/typography';
 
-/* ABTR — Club de corredores Albatera. Brand tokens from the 2026 visual identity manual. */
+/* ABTR — Club de Running Albatera. Brand tokens from the 2026 visual identity manual. */
 @theme {
   --color-abtr-black: #000000;
   --color-abtr-blue: #009fe3;

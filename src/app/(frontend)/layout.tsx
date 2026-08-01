@@ -40,13 +40,13 @@ const sans = Archivo({
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'ABTR — Club de corredores Albatera',
+    default: 'ABTR — Club de Running Albatera',
     template: '%s',
   },
   description:
     'Club de atletismo de Albatera. Carrera ALBATERUN, Social Runs, eventos de club, resultados y zona de socios.',
   openGraph: {
-    siteName: 'ABTR — Club de corredores Albatera',
+    siteName: 'ABTR — Club de Running Albatera',
     locale: 'es_ES',
     type: 'website',
   },
@@ -61,7 +61,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       <body className="flex min-h-screen flex-col">
         <ThemeProvider>
           <SiteHeader />
-          <div className="flex-1">{children}</div>
+          <div className="flex-1 overflow-x-clip">{children}</div>
           <SiteFooter />
           <Toaster />
         </ThemeProvider>

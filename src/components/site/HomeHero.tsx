@@ -114,7 +114,7 @@ export function HomeHero({
       <h1
         className={`abtr-rise font-display text-[clamp(2.25rem,8vw,5rem)] uppercase leading-[0.95] text-balance break-words ${titleColor}`}
       >
-        {title ?? 'Club de corredores Albatera'}
+        {title ?? 'Club de Running Albatera'}
       </h1>
       {subtitle?.trim() ? (
         <p className={`abtr-rise-2 mt-6 max-w-md text-lg ${subtitleColor}`}>{subtitle}</p>

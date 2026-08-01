@@ -15,7 +15,7 @@ export function Logo() {
       </div>
       <div style={{ lineHeight: 1.1 }}>
         <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '0.02em' }}>ABTR</div>
-        <div style={{ fontSize: 12, opacity: 0.6, fontWeight: 600 }}>Club de corredores Albatera</div>
+        <div style={{ fontSize: 12, opacity: 0.6, fontWeight: 600 }}>Club de Running Albatera</div>
       </div>
     </div>
   )

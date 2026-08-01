@@ -6,4 +6,4 @@ export const SITE_URL = (
     : 'http://localhost:3000')
 ).replace(/\/$/, '')
 
-export const SITE_NAME = 'ABTR — Club de corredores Albatera'
+export const SITE_NAME = 'ABTR — Club de Running Albatera'

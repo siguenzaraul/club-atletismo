@@ -34,7 +34,7 @@ export default async function JoinPage({
       <div>
         <h1 className="font-display text-4xl uppercase tracking-tight">Hazte socio</h1>
         <p className="mb-8 mt-2 text-abtr-ink/70">
-          Únete al Club de corredores Albatera y accede a tu zona privada.
+          Únete al Club de Running Albatera y accede a tu zona privada.
         </p>
         {membershipTypes.length > 0 && (
           <ul className="flex flex-col gap-3">

@@ -71,7 +71,7 @@ export default buildConfig({
     },
     meta: {
       titleSuffix: '· ABTR',
-      description: 'Panel de gestión del Club de corredores Albatera',
+      description: 'Panel de gestión del Club de Running Albatera',
     },
     components: {
       graphics: {

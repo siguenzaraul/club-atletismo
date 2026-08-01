@@ -27,7 +27,7 @@ export const HomePage: GlobalConfig = {
           name: 'heroTitle',
           type: 'text',
           label: 'Título del hero',
-          defaultValue: 'Club de corredores Albatera',
+          defaultValue: 'Club de Running Albatera',
         },
         {
           name: 'heroSubtitle',

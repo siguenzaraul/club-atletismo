@@ -6,7 +6,7 @@ import { BrandPattern } from '@/components/BrandPattern'
 export const dynamic = 'force-dynamic'
 export const metadata = {
   title: 'Contacto | ABTR',
-  description: 'Ponte en contacto con el Club de corredores Albatera.',
+  description: 'Ponte en contacto con el Club de Running Albatera.',
 }
 
 export default async function ContactPage() {

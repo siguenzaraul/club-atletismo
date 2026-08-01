@@ -14,7 +14,7 @@ export default async function TeamPage() {
     <main className="mx-auto max-w-6xl px-6 py-16">
       <h1 className="font-display text-4xl uppercase tracking-tight sm:text-5xl">El equipo</h1>
       <p className="mt-3 max-w-xl text-abtr-ink/60">
-        Entrenadores, junta directiva y atletas que forman el Club de corredores Albatera.
+        Entrenadores, junta directiva y atletas que forman el Club de Running Albatera.
       </p>
 
       {team.docs.length > 0 ? (

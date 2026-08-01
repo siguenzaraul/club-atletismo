@@ -48,7 +48,7 @@ export async function SiteFooter() {
           </div>
         </div>
         <p className="mt-12 text-xs text-white/60">
-          © {new Date().getFullYear()} ABTR — Club de corredores Albatera.
+          © {new Date().getFullYear()} ABTR — Club de Running Albatera.
         </p>
       </div>
     </footer>

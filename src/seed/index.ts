@@ -32,7 +32,7 @@ const seed = async (): Promise<void> => {
     slug: 'home-page',
     data: {
       heroEyebrow: 'Albatera · Alicante',
-      heroTitle: 'Club de corredores Albatera',
+      heroTitle: 'Club de Running Albatera',
       heroSubtitle: 'Un objetivo, un municipio, un deporte.',
       heroShowBrandPattern: true,
       heroTheme: 'dark',
@@ -61,7 +61,7 @@ const seed = async (): Promise<void> => {
               children: [
                 {
                   type: 'text',
-                  text: 'El Club de corredores Albatera (ABTR) nació para llevar el atletismo popular a cada rincón del municipio. Organizamos la ALBATERUN, Social Runs y entrenamientos de club abiertos a todos los niveles.',
+                  text: 'El Club de Running Albatera (ABTR) nació para llevar el atletismo popular a cada rincón del municipio. Organizamos la ALBATERUN, Social Runs y entrenamientos de club abiertos a todos los niveles.',
                   format: 0,
                   style: '',
                   mode: 'normal',

@@ -1,11 +1,14 @@
 import React from 'react'
 import Link from 'next/link'
 import { BrandPattern } from '../BrandPattern'
+import { cn } from '@/lib/utils'
 
 type LogoProps = {
   /** Tagline visibility; hidden on tight spaces. */
   withTagline?: boolean
   tagline?: string
+  /** Extra classes for the tagline (e.g. to hide it responsively in the header). */
+  taglineClassName?: string
   dark?: boolean
   size?: number
 }
@@ -13,7 +16,8 @@ type LogoProps = {
 /** ABTR lockup: brand module + wordmark. Used in header and footer. */
 export function Logo({
   withTagline = true,
-  tagline = 'Club de corredores Albatera',
+  tagline = 'Club de Running Albatera',
+  taglineClassName,
   dark = false,
   size = 44,
 }: LogoProps) {
@@ -27,7 +31,13 @@ export function Logo({
           ABTR
         </span>
         {withTagline && (
-          <span className={`block text-xs font-semibold ${dark ? 'text-white/70' : 'text-muted-foreground'}`}>
+          <span
+            className={cn(
+              'block text-xs font-semibold',
+              dark ? 'text-white/70' : 'text-muted-foreground',
+              taglineClassName,
+            )}
+          >
             {tagline}
           </span>
         )}

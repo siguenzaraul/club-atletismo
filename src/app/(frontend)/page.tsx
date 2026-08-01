@@ -177,7 +177,7 @@ export default async function HomePage() {
             Corre con nosotros
           </h2>
           <p className="mx-auto mt-4 max-w-md text-lg text-white/80">
-            Únete al Club de corredores Albatera y forma parte del movimiento.
+            Únete al Club de Running Albatera y forma parte del movimiento.
           </p>
           <Link
             href="/hazte-socio"

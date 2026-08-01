@@ -43,7 +43,7 @@ export function FeaturedRace({ race }: { race: Event }) {
             {race.location ? <span className="text-muted-foreground"> · {race.location}</span> : null}
           </p>
           <p className="max-w-md text-muted-foreground">
-            La carrera principal del Club de corredores Albatera. Una cita anual con el municipio y el
+            La carrera principal del Club de Running Albatera. Una cita anual con el municipio y el
             deporte.
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
