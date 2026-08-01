@@ -1,5 +1,4 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
-import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { es } from '@payloadcms/translations/languages/es'
@@ -50,9 +49,14 @@ if (!secret) {
 const migrationDir = path.resolve(dirname, 'migrations')
 
 // SQLite for zero-config local dev; Postgres on Vercel (set DATABASE_URI to a postgres URL).
+// The SQLite adapter is imported dynamically so its native `libsql` dependency is never
+// required in production (Postgres), where it isn't bundled into the serverless function.
 const db = usePostgres
   ? postgresAdapter({ migrationDir, pool: { connectionString: databaseUri } })
-  : sqliteAdapter({ migrationDir, client: { url: databaseUri || 'file:./club-atletismo.db' } })
+  : (await import('@payloadcms/db-sqlite')).sqliteAdapter({
+      migrationDir,
+      client: { url: databaseUri || 'file:./club-atletismo.db' },
+    })
 
 // Media goes to Vercel Blob in deploys; falls back to local disk when no token is set.
 const blobToken = process.env.BLOB_READ_WRITE_TOKEN
