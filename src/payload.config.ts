@@ -124,6 +124,9 @@ export default buildConfig({
       ? [
           vercelBlobStorage({
             enabled: true,
+            // Subidas vía servidor: evita el handler client que arrastra deps de Node
+            // (undici/node:*) y rompe `next build` al regenerarse el importMap.
+            clientUploads: false,
             collections: { media: true },
             token: blobToken,
           }),
