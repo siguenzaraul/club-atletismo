@@ -1,5 +1,17 @@
 import { SITE_URL } from '@/lib/site'
-import { button, dataRow, escapeHtml, muted, p, quote, shell, type EmailFooter } from './render'
+import {
+  button,
+  card,
+  dataRow,
+  escapeHtml,
+  link,
+  muted,
+  p,
+  quote,
+  shell,
+  steps,
+  type EmailFooter,
+} from './render'
 
 /** Toda plantilla devuelve también `text`: entregabilidad y clientes en texto plano. */
 export type EmailContent = { subject: string; html: string; text: string }
@@ -11,34 +23,74 @@ export const welcomeEmail = (args: {
   footer?: EmailFooter
 }): EmailContent => {
   const firstName = args.name.trim().split(/\s+/)[0] || args.name
-  const subject = '¡Bienvenido al Club de Running Albatera!'
+  const subject = `¡Bienvenido al club, ${firstName}!`
 
   const body = [
-    p(`Hola <strong>${escapeHtml(firstName)}</strong>, ya eres parte del club. Nos alegra tenerte con nosotros.`),
-    args.membershipTypeName
-      ? p(`Te has dado de alta como <strong>${escapeHtml(args.membershipTypeName)}</strong>. Tu cuota queda <strong>pendiente de confirmar</strong> por el club; te avisaremos en cuanto esté todo listo.`)
-      : p('Tu cuota queda <strong>pendiente de confirmar</strong> por el club; te avisaremos en cuanto esté todo listo.'),
-    args.eventTitle
-      ? p(`Además te hemos inscrito en <strong>${escapeHtml(args.eventTitle)}</strong>.`)
-      : '',
-    p('Desde tu zona de socio puedes ver tus inscripciones, tu equipación y actualizar tus datos.'),
-    button(`${SITE_URL}/socios`, 'Ir a mi zona de socio'),
-    muted('Si tienes cualquier duda, responde a este correo y te echamos una mano.'),
-  ].join('\n')
+    p('Ya eres parte del <strong>Club de Running Albatera</strong>. Nos alegra tenerte con nosotros — nos vemos en el asfalto.'),
 
-  const text = [
-    `Hola ${firstName}, ya eres parte del Club de Running Albatera.`,
-    '',
-    args.membershipTypeName ? `Alta como: ${args.membershipTypeName}.` : '',
-    'Tu cuota queda pendiente de confirmar por el club.',
-    args.eventTitle ? `Te hemos inscrito en: ${args.eventTitle}.` : '',
-    '',
-    `Zona de socio: ${SITE_URL}/socios`,
+    card({
+      accent: 'yellow',
+      title: 'Tu cuota',
+      body: args.membershipTypeName
+        ? `Alta como <strong>${escapeHtml(args.membershipTypeName)}</strong>. Queda <strong>pendiente de confirmar</strong> por el club; te avisamos en cuanto esté lista.`
+        : 'Queda <strong>pendiente de confirmar</strong> por el club; te avisamos en cuanto esté lista.',
+    }),
+
+    args.eventTitle
+      ? card({
+          accent: 'red',
+          title: 'Ya tienes dorsal',
+          body: `Te hemos inscrito en <strong>${escapeHtml(args.eventTitle)}</strong>. Puedes consultarla o cancelarla desde tu zona de socio.`,
+        })
+      : '',
+
+    `<h2 style="margin:26px 0 14px;font-family:Archivo,Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:17px;font-weight:800;letter-spacing:-0.01em;color:#111111;">Qué puedes hacer ahora</h2>`,
+    steps([
+      'Completar tu <strong>perfil de socio</strong> con tus datos.',
+      'Apuntarte a las <strong>carreras y social runs</strong> con inscripción abierta.',
+      'Consultar tu <strong>equipación</strong>: qué te toca y qué has recogido ya.',
+    ]),
+
+    button(`${SITE_URL}/socios`, 'Entrar en mi zona de socio'),
+
+    muted(
+      `¿Alguna duda? Responde a este correo y te echamos una mano. También puedes escribirnos desde ${link(`${SITE_URL}/contacto`, 'el formulario de contacto')}.`,
+    ),
   ]
     .filter(Boolean)
     .join('\n')
 
-  return { subject, html: shell({ title: subject, body, footer: args.footer }), text }
+  const text = [
+    `Hola ${firstName}, ya eres parte del Club de Running Albatera.`,
+    '',
+    'TU CUOTA',
+    args.membershipTypeName ? `Alta como: ${args.membershipTypeName}.` : '',
+    'Queda pendiente de confirmar por el club; te avisamos en cuanto esté lista.',
+    '',
+    args.eventTitle ? `YA TIENES DORSAL\nTe hemos inscrito en: ${args.eventTitle}.\n` : '',
+    'QUÉ PUEDES HACER AHORA',
+    '1. Completar tu perfil de socio con tus datos.',
+    '2. Apuntarte a las carreras y social runs con inscripción abierta.',
+    '3. Consultar tu equipación: qué te toca y qué has recogido ya.',
+    '',
+    `Tu zona de socio: ${SITE_URL}/socios`,
+    '',
+    '¿Alguna duda? Responde a este correo y te echamos una mano.',
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  return {
+    subject,
+    html: shell({
+      title: subject,
+      body,
+      footer: args.footer,
+      eyebrow: 'Alta confirmada',
+      preheader: 'Tu cuenta ya está lista. Te contamos qué puedes hacer desde tu zona de socio.',
+    }),
+    text,
+  }
 }
 
 export const contactNotificationEmail = (args: {
