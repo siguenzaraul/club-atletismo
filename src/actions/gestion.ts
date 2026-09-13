@@ -476,13 +476,19 @@ export type BackfillResult = {
 }
 
 const BACKFILL_BATCH = 200
+/** Tope por pasada, para no pasarse del límite de duración de una Server Action. */
+const BACKFILL_MAX_PER_RUN = 1000
 
 /**
  * Normaliza los resultados creados antes de que existieran `markSeconds` y `distanceMeters`.
  *
- * Idempotente por construcción: sólo mira las filas sin normalizar, así que reejecutarla no
- * toca nada ya hecho. Va por lotes con un botón "Continuar" para respetar el límite de
- * duración de las Server Actions sin necesidad de un sistema de trabajos en segundo plano.
+ * Idempotente: sólo mira las filas sin normalizar, así que reejecutarla no toca nada ya hecho.
+ *
+ * Avanza por CURSOR de id, no por «los primeros 200 que cumplan el filtro». La diferencia es
+ * importante: una marca ilegible («DNF») o un evento sin distancia vuelven a quedar a `null`
+ * tras el update y siguen cumpliendo el filtro, así que el lote se repetía eternamente y
+ * «Continuar» no avanzaba nunca. Con el cursor el progreso está garantizado, y lo que no se
+ * puede normalizar se cuenta aparte en vez de bloquear la cola.
  */
 export const backfillResultsAction = async (dryRun: boolean): Promise<BackfillResult> => {
   let payload
@@ -497,39 +503,56 @@ export const backfillResultsAction = async (dryRun: boolean): Promise<BackfillRe
   }
 
   try {
-    const batch = await payload.find({
-      collection: 'results',
-      where: pending,
-      limit: BACKFILL_BATCH,
-      depth: 0,
-      overrideAccess: true,
-    })
-
-    const sinMarcaValida = batch.docs.filter(
-      (r) => r.mark && parseMarkToSeconds(r.mark) === null,
-    ).length
-
     if (dryRun) {
+      const preview = await payload.find({
+        collection: 'results',
+        where: pending,
+        limit: BACKFILL_BATCH,
+        depth: 0,
+        overrideAccess: true,
+      })
       return {
         ok: true,
         dryRun,
         procesados: 0,
-        restantes: batch.totalDocs,
-        sinMarcaValida,
+        restantes: preview.totalDocs,
+        sinMarcaValida: preview.docs.filter((r) => r.mark && parseMarkToSeconds(r.mark) === null).length,
       }
     }
 
     let procesados = 0
-    for (const doc of batch.docs) {
-      // El update dispara el `beforeChange` de `results`, que calcula ambas columnas.
-      await payload
-        .update({ collection: 'results', id: doc.id, data: {}, overrideAccess: true })
-        .then(() => {
-          procesados++
-        })
-        .catch((err) => payload.logger.error({ err, id: doc.id }, 'backfill row failed'))
+    let sinMarcaValida = 0
+    let lastId = 0
+    let vistos = 0
+
+    while (vistos < BACKFILL_MAX_PER_RUN) {
+      const batch = await payload.find({
+        collection: 'results',
+        where: { and: [pending, { id: { greater_than: lastId } }] },
+        sort: 'id',
+        limit: BACKFILL_BATCH,
+        depth: 0,
+        overrideAccess: true,
+      })
+      if (batch.docs.length === 0) break
+
+      for (const doc of batch.docs) {
+        // El cursor avanza SIEMPRE, se haya podido normalizar la fila o no.
+        lastId = Number(doc.id)
+        vistos++
+        if (doc.mark && parseMarkToSeconds(doc.mark) === null) sinMarcaValida++
+        // El update dispara el `beforeChange` de `results`, que calcula ambas columnas.
+        await payload
+          .update({ collection: 'results', id: doc.id, data: {}, overrideAccess: true })
+          .then(() => {
+            procesados++
+          })
+          .catch((err) => payload.logger.error({ err, id: doc.id }, 'backfill row failed'))
+      }
     }
 
+    // Lo que sigue cumpliendo el filtro tras la pasada NO se puede normalizar solo: marcas que
+    // no se entienden o eventos sin distancia. Se corrigen a mano en el panel.
     const left = await payload.count({ collection: 'results', where: pending, overrideAccess: true })
     return { ok: true, dryRun, procesados, restantes: left.totalDocs, sinMarcaValida }
   } catch (err) {

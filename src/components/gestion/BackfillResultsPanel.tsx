@@ -22,9 +22,11 @@ export function BackfillResultsPanel(): React.JSX.Element {
       <p className="text-sm text-muted-foreground">
         Los resultados creados antes de que existieran la distancia y la marca en segundos están
         sin normalizar. Hasta que se normalicen no cuentan para las marcas personales ni para el
-        ranking del club. Esta herramienta los repasa por lotes de 200 y{' '}
+        ranking del club. Esta herramienta los repasa y{' '}
         <strong>se puede ejecutar tantas veces como haga falta</strong>: sólo toca lo que aún no
-        está hecho.
+        está hecho. Si al terminar quedan pendientes, son los que <strong>no se pueden</strong>{' '}
+        normalizar solos (una marca que no se entiende, o un evento sin distancia): ésos hay que
+        corregirlos a mano en el panel.
       </p>
 
       <div className="flex flex-wrap gap-3">
@@ -46,9 +48,10 @@ export function BackfillResultsPanel(): React.JSX.Element {
         <div className="grid gap-3 sm:grid-cols-3">
           <Stat label="Normalizados en esta pasada" value={state.procesados} />
           <Stat
-            label="Pendientes"
+            label={state.dryRun ? 'Pendientes' : 'No se pueden normalizar'}
             value={state.restantes}
             tone={state.restantes > 0 ? 'warning' : 'success'}
+            hint={!state.dryRun && state.restantes > 0 ? 'Corrígelos a mano en el panel' : undefined}
           />
           <Stat
             label="Marcas que no se entienden"

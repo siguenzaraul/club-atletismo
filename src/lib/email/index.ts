@@ -38,7 +38,7 @@ export const sendEmail = async (payload: Payload, args: SendEmailArgs): Promise<
     })
     return { ok: true }
   } catch (err) {
-    payload.logger.error({ err, to, subject: args.subject }, 'sendEmail failed')
+    payload.logger.error({ err, subject: args.subject }, 'sendEmail failed')
     return { ok: false }
   }
 }

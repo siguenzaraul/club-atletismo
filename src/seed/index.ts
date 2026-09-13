@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import { getPayload } from 'payload'
 import config from '../payload.config'
+import { ensureStandardSizes } from '../lib/equipment'
 
 /**
  * Seeds a fresh database with an admin user, demo content and a sample member.
@@ -137,28 +138,82 @@ const seed = async (): Promise<void> => {
     },
   })
 
-  // Equipación: escala de tallas + tallas
-  const escalaRopa = await payload.create({
-    collection: 'size-scales',
-    data: { name: 'Ropa XS-XXL', slug: 'ropa-xs-xxl' },
+  // Equipación: escala de tallas + tallas. `ensureStandardSizes` siembra XS→4XL y es
+  // idempotente, así que reconoce lo que ya hubiera en vez de duplicarlo.
+  const { scaleId: escalaRopaId } = await ensureStandardSizes(payload)
+  const tallasRes = await payload.find({
+    collection: 'sizes',
+    where: { scale: { equals: escalaRopaId } },
+    limit: 100,
+    depth: 0,
+    overrideAccess: true,
   })
-  const tallas: Record<string, number> = {}
-  for (const [i, label] of ['XS', 'S', 'M', 'L', 'XL', 'XXL'].entries()) {
-    const t = await payload.create({
-      collection: 'sizes',
-      data: { label, scale: escalaRopa.id, order: i },
-    })
-    tallas[label] = t.id
-  }
+  const tallas: Record<string, number> = Object.fromEntries(
+    tallasRes.docs.map((t) => [t.label, t.id]),
+  )
 
-  // Catálogo de equipación
+  // Tipos de prenda: dentro de cada uno, el socio elige UNA prenda.
+  const parteArriba = await payload.create({
+    collection: 'equipment-categories',
+    data: { name: 'Parte de arriba', publicLabel: '¿Qué camiseta quieres?', order: 0 },
+  })
+  const parteAbajo = await payload.create({
+    collection: 'equipment-categories',
+    data: { name: 'Parte de abajo', publicLabel: '¿Qué prenda de abajo quieres?', order: 1 },
+  })
+
+  // Catálogo de equipación: los subtipos SON artículos, agrupados por tipo de prenda.
   const camiseta = await payload.create({
     collection: 'equipment-items',
-    data: { name: 'Camiseta oficial', slug: 'camiseta-oficial', sizeScale: escalaRopa.id, order: 0 },
+    data: {
+      name: 'Camiseta oficial',
+      slug: 'camiseta-oficial',
+      sizeScale: escalaRopaId,
+      category: parteArriba.id,
+      order: 0,
+    },
+  })
+  await payload.create({
+    collection: 'equipment-items',
+    data: {
+      name: 'Camiseta de tirantes',
+      slug: 'camiseta-tirantes',
+      sizeScale: escalaRopaId,
+      category: parteArriba.id,
+      order: 1,
+    },
   })
   const pantalon = await payload.create({
     collection: 'equipment-items',
-    data: { name: 'Pantalón corto', slug: 'pantalon-corto', sizeScale: escalaRopa.id, order: 1 },
+    data: {
+      name: 'Pantalón corto',
+      slug: 'pantalon-corto',
+      sizeScale: escalaRopaId,
+      category: parteAbajo.id,
+      order: 0,
+    },
+  })
+  await payload.create({
+    collection: 'equipment-items',
+    data: {
+      name: 'Malla larga',
+      slug: 'malla-larga',
+      sizeScale: escalaRopaId,
+      category: parteAbajo.id,
+      order: 1,
+    },
+  })
+
+  // El alta pregunta por la equipación. En producción esto nace vacío a propósito: el
+  // formulario no cambia hasta que el club lo configura.
+  await payload.updateGlobal({
+    slug: 'registration-form',
+    data: {
+      garments: [
+        { category: parteArriba.id, enabled: true, required: true, askSize: true },
+        { category: parteAbajo.id, enabled: true, required: false, askSize: true },
+      ],
+    },
   })
 
   // Stock inicial de camisetas talla M

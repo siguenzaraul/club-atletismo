@@ -234,14 +234,14 @@ export const registerAction = async (_prev: AuthState, formData: FormData): Prom
     }
     // La cuenta SÍ se ha creado y sólo ha fallado el login. Jamás dejamos al usuario en el
     // formulario con la cuenta ya creada: se le manda a entrar.
-    payload.logger.error({ err, email }, 'registerAction: login after create failed')
+    payload.logger.error({ err }, 'registerAction: login after create failed')
     redirect('/login?alta=ok')
   }
 
   if (!session || !token) {
     // La cuenta existe pero no hemos podido abrirle sesión. Mismo desenlace que el catch: se
     // le manda a entrar, nunca de vuelta al formulario con el email ya ocupado.
-    payload.logger.error({ email }, 'registerAction: login returned no session')
+    payload.logger.error({}, 'registerAction: login returned no session')
     redirect('/login?alta=ok')
   }
 
