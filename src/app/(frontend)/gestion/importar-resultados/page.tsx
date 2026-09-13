@@ -1,15 +1,15 @@
 import React from 'react'
 import { redirect } from 'next/navigation'
-import { getCurrentStaff } from '@/actions/gestion'
+import { currentStaff } from '@/lib/session'
 import { getClient } from '@/lib/payload'
 import { ImportResultsForm } from '@/components/gestion/ImportResultsForm'
 import { PageHeader } from '@/components/ui/page-header'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Importar resultados | ABTR' }
+export const metadata = { title: 'Importar resultados' }
 
 export default async function ImportResultsPage() {
-  const staff = await getCurrentStaff()
+  const staff = await currentStaff()
   if (!staff) redirect('/admin/login?redirect=/gestion/importar-resultados')
 
   const payload = await getClient()

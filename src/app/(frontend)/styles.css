@@ -194,7 +194,10 @@
   --muted-foreground: oklch(0.735 0.02 245);
   --accent: oklch(0.3 0.028 245);
   --accent-foreground: oklch(0.965 0.004 245);
-  --destructive: oklch(0.62 0.2 25);
+  /* Rojo aclarado para oscuro: sobre --card el rojo de marca solo da 3.6:1. Se usa siempre
+     como TEXTO o como tinte (bg-destructive/10), nunca como fondo sólido, así que subir la
+     luminosidad solo mejora la legibilidad. */
+  --destructive: oklch(0.7 0.19 25);
   --border: oklch(1 0 0 / 11%);
   --input: oklch(1 0 0 / 14%);
   --ring: var(--color-abtr-blue);
@@ -213,10 +216,10 @@
   --sidebar-ring: var(--color-abtr-blue);
 }
 
-/* Dark mode safety net: `--color-abtr-*` are Tailwind v4 CSS variables, so flipping the
-   neutral tones here makes every existing `text-abtr-ink` / `border-abtr-ink` / paper utility
-   read correctly in dark — without touching the brand hues (blue/red/yellow/black stay put).
-   Surfaces rebuilt on semantic tokens don't rely on this; it just keeps the rest coherent. */
+/* Dark mode safety net (TRANSITORIO — ver "Reglas de color" en DESIGN.md).
+   `--color-abtr-*` are Tailwind v4 CSS variables, so flipping the neutral tones here makes
+   any leftover `text-abtr-ink` / `border-abtr-ink` / paper utility read correctly in dark.
+   The public site has been migrated to semantic tokens; this only covers stragglers. */
 .dark {
   --color-abtr-ink: #eef1f5;
   --color-abtr-paper: oklch(0.183 0.014 245);
@@ -255,6 +258,18 @@
 }
 
 @layer components {
+  /* Brand "drenched" band: stays black in both themes on purpose (DESIGN.md).
+     In dark it no longer contrasts with the page, so a hairline restores the edge. */
+  .band-ink {
+    background-color: var(--color-abtr-black);
+    color: #fff;
+  }
+  .dark .band-ink {
+    box-shadow:
+      inset 0 1px 0 var(--border),
+      inset 0 -1px 0 var(--border);
+  }
+
   .tone-success {
     background-color: var(--tone-success-bg);
     color: var(--tone-success-fg);
@@ -275,4 +290,44 @@
     color: var(--tone-danger-fg);
     border-color: var(--tone-danger-bd);
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Rich text del CMS.
+
+   Mapea las variables de @tailwindcss/typography a los tokens semánticos, así que el
+   contenido editorial funciona en claro y oscuro SIN variante `dark:`: los tokens ya se
+   voltean solos en `.dark`.
+
+   Va SIN `@layer` a propósito. `@plugin '@tailwindcss/typography'` registra `.prose` en la
+   capa `utilities`, que va después de `components`, y el orden de capas gana a la
+   especificidad: una regla en `components` no puede sobrescribirlo por muchas clases que
+   encadene. El CSS sin capa gana a todo lo que esté en una capa, que es justo lo que hace
+   falta aquí.
+
+   Empareja siempre `prose` con `prose-abtr`; lo vigila tests/unit/theme/dark-mode-guard.spec.ts.
+   ───────────────────────────────────────────────────────────────────────────── */
+.prose.prose-abtr {
+  --tw-prose-body: var(--foreground);
+  --tw-prose-headings: var(--foreground);
+  --tw-prose-lead: var(--muted-foreground);
+  --tw-prose-links: var(--color-abtr-blue);
+  --tw-prose-bold: var(--foreground);
+  --tw-prose-counters: var(--muted-foreground);
+  --tw-prose-bullets: var(--border);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--foreground);
+  --tw-prose-quote-borders: var(--color-abtr-blue);
+  --tw-prose-captions: var(--muted-foreground);
+  --tw-prose-kbd: var(--foreground);
+  --tw-prose-code: var(--foreground);
+  --tw-prose-pre-code: var(--card-foreground);
+  --tw-prose-pre-bg: var(--card);
+  --tw-prose-th-borders: var(--border);
+  --tw-prose-td-borders: var(--border);
+  color: var(--tw-prose-body);
+}
+
+.prose.prose-abtr :where(a):not(:where([class~='not-prose'] *)) {
+  font-weight: 600;
 }

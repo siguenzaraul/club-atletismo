@@ -1,4 +1,5 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
+import { resendAdapter } from '@payloadcms/email-resend'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { es } from '@payloadcms/translations/languages/es'
@@ -23,6 +24,7 @@ import { AttributeDefinitions } from './collections/AttributeDefinitions'
 import { MemberAttributes } from './collections/MemberAttributes'
 import { SizeScales } from './collections/SizeScales'
 import { Sizes } from './collections/Sizes'
+import { EquipmentCategories } from './collections/EquipmentCategories'
 import { EquipmentItems } from './collections/EquipmentItems'
 import { EquipmentStock } from './collections/EquipmentStock'
 import { EquipmentDeliveries } from './collections/EquipmentDeliveries'
@@ -30,6 +32,7 @@ import { EquipmentPacks } from './collections/EquipmentPacks'
 import { ContactMessages } from './collections/ContactMessages'
 import { SiteSettings } from './globals/SiteSettings'
 import { HomePage } from './globals/HomePage'
+import { RegistrationForm } from './globals/RegistrationForm'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -46,13 +49,39 @@ if (!secret) {
 }
 
 // Migrations live in src/migrations and must be committed before deploying to Postgres.
+// `pnpm migrate:create <nombre>` las genera; `vercel-build` las aplica antes de `next build`.
 const migrationDir = path.resolve(dirname, 'migrations')
+
+// Envío real de correo sólo con clave Y en el entorno correcto. Sin la clave, Payload usa su
+// adaptador mock (loguea a consola), así que `payload.sendEmail()` sigue siendo llamable y
+// ningún punto de llamada necesita condicionales. Un preview nunca escribe a un socio real.
+const resendKey = process.env.RESEND_API_KEY
+const emailEnabled =
+  Boolean(resendKey) &&
+  (process.env.EMAIL_ENABLED === 'true' ||
+    (process.env.VERCEL_ENV === 'production' && process.env.EMAIL_ENABLED !== 'false'))
 
 // SQLite for zero-config local dev; Postgres on Vercel (set DATABASE_URI to a postgres URL).
 // The SQLite adapter is imported dynamically so its native `libsql` dependency is never
 // required in production (Postgres), where it isn't bundled into the serverless function.
 const db = usePostgres
-  ? postgresAdapter({ migrationDir, pool: { connectionString: databaseUri } })
+  ? postgresAdapter({
+      migrationDir,
+      // Nunca sincronizar el esquema por push contra Postgres: sólo migraciones versionadas.
+      // Corta de raíz el modo de fallo que creó el esquema de producción: un `pnpm dev` con
+      // DATABASE_URI apuntando a Neon empujaba cambios de esquema a producción en silencio.
+      push: false,
+      pool: {
+        connectionString: databaseUri,
+        // Se mantiene el `max` por defecto de `pg` (10). Bajarlo a 5 parecía prudente para
+        // serverless, pero una sola página hace ~10 consultas en paralelo y el pool se queda sin
+        // conexiones: probado en local, daba "timeout exceeded when trying to connect" y echaba
+        // al socio a /login. Si hay que limitarlo, que sea con medidas de Neon, no a ojo.
+        idleTimeoutMillis: 30_000,
+        // Fallar rápido y con un error claro en vez de colgarse hasta el timeout de la función.
+        connectionTimeoutMillis: 10_000,
+      },
+    })
   : (await import('@payloadcms/db-sqlite')).sqliteAdapter({
       migrationDir,
       client: { url: databaseUri || 'file:./club-atletismo.db' },
@@ -98,13 +127,23 @@ export default buildConfig({
     MemberAttributes,
     SizeScales,
     Sizes,
+    EquipmentCategories,
     EquipmentItems,
     EquipmentStock,
     EquipmentDeliveries,
     EquipmentPacks,
     ContactMessages,
   ],
-  globals: [HomePage, SiteSettings],
+  globals: [HomePage, SiteSettings, RegistrationForm],
+  ...(emailEnabled
+    ? {
+        email: resendAdapter({
+          defaultFromAddress: process.env.EMAIL_FROM_ADDRESS || 'no-reply@abtr.run',
+          defaultFromName: 'ABTR — Club de Running Albatera',
+          apiKey: resendKey!,
+        }),
+      }
+    : {}),
   editor: lexicalEditor(),
   // Panel de administración en español.
   i18n: { fallbackLanguage: 'es', supportedLanguages: { es } },

@@ -3,7 +3,14 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { UsersIcon, UploadIcon, ListChecksIcon, ExternalLinkIcon } from 'lucide-react'
+import {
+  UsersIcon,
+  UploadIcon,
+  ListChecksIcon,
+  ExternalLinkIcon,
+  PackageIcon,
+  WrenchIcon,
+} from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
@@ -12,12 +19,15 @@ const LINKS = [
     href: '/gestion',
     label: 'Socios',
     icon: UsersIcon,
-    match: (p: string) =>
-      p === '/gestion' ||
-      (p.startsWith('/gestion/') && !p.startsWith('/gestion/importar') && !p.startsWith('/gestion/resumen')),
+    // Lista blanca, no negra: la ficha de socio es `/gestion/<id>` y siempre es numérica. Antes
+    // era una lista de prefijos a excluir, así que cada sección nueva se marcaba como «Socios»
+    // hasta que alguien se acordaba de añadirla.
+    match: (p: string) => p === '/gestion' || /^\/gestion\/\d+$/.test(p),
   },
   { href: '/gestion/resumen', label: 'Resumen', icon: ListChecksIcon, match: (p: string) => p.startsWith('/gestion/resumen') },
+  { href: '/gestion/stock', label: 'Stock', icon: PackageIcon, match: (p: string) => p.startsWith('/gestion/stock') },
   { href: '/gestion/importar-resultados', label: 'Importar resultados', icon: UploadIcon, match: (p: string) => p.startsWith('/gestion/importar') },
+  { href: '/gestion/mantenimiento', label: 'Mantenimiento', icon: WrenchIcon, match: (p: string) => p.startsWith('/gestion/mantenimiento') },
 ]
 
 export function StaffNav(): React.JSX.Element {

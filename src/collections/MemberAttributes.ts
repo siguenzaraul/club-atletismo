@@ -67,6 +67,7 @@ export const MemberAttributes: CollectionConfig = {
           id: defId,
           depth: 0,
           overrideAccess: true,
+          req,
         })
         if (!def) return data
         const type = def.type as AttributeType

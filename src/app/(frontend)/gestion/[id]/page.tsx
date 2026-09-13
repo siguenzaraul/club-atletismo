@@ -2,7 +2,7 @@ import React from 'react'
 import { notFound, redirect } from 'next/navigation'
 import { CalendarCheckIcon, MedalIcon } from 'lucide-react'
 
-import { getCurrentStaff } from '@/actions/gestion'
+import { currentStaff } from '@/lib/session'
 import { getClient } from '@/lib/payload'
 import { getCurrentSeason } from '@/lib/membership'
 import { valueFieldFor, type AttributeType } from '@/lib/attributes'
@@ -20,7 +20,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import type { MemberAttribute } from '@/payload-types'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Ficha del socio | ABTR' }
+export const metadata = { title: 'Ficha del socio' }
 
 const idOf = (v: unknown): number | null =>
   v == null ? null : typeof v === 'object' ? ((v as { id?: number }).id ?? null) : (v as number)
@@ -31,7 +31,7 @@ function Panel({ children }: { children: React.ReactNode }) {
 }
 
 export default async function MemberFilePage({ params }: { params: Promise<{ id: string }> }) {
-  const staff = await getCurrentStaff()
+  const staff = await currentStaff()
   if (!staff) redirect('/admin/login?redirect=/gestion')
   const { id } = await params
   const memberId = Number(id)
@@ -45,7 +45,19 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
 
   const season = await getCurrentSeason(payload)
 
-  const [membershipRes, types, items, sizes, deliveriesRes, defsRes, attrsRes, regsRes, resultsRes, packsRes] =
+  const [
+    membershipRes,
+    types,
+    categoriesRes,
+    items,
+    sizes,
+    deliveriesRes,
+    defsRes,
+    attrsRes,
+    regsRes,
+    resultsRes,
+    packsRes,
+  ] =
     await Promise.all([
       season
         ? payload.find({
@@ -57,8 +69,11 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
           })
         : Promise.resolve({ docs: [] as { paymentStatus?: string | null; type?: unknown }[] }),
       payload.find({ collection: 'membership-types', where: { active: { equals: true } }, sort: 'order', limit: 100, overrideAccess: true }),
+      payload.find({ collection: 'equipment-categories', where: { active: { not_equals: false } }, sort: 'order', limit: 100, depth: 0, overrideAccess: true }),
       payload.find({ collection: 'equipment-items', where: { active: { equals: true } }, sort: 'order', limit: 200, depth: 0, overrideAccess: true }),
-      payload.find({ collection: 'sizes', sort: 'order', limit: 500, depth: 0, overrideAccess: true }),
+      // Sólo las tallas activas: es la lista del SELECTOR. Las tallas de entregas ya hechas
+      // vienen resueltas dentro del propio documento, así que no desaparecen del histórico.
+      payload.find({ collection: 'sizes', where: { active: { not_equals: false } }, sort: 'order', limit: 500, depth: 0, overrideAccess: true }),
       payload.find({ collection: 'equipment-deliveries', where: { member: { equals: memberId } }, depth: 1, limit: 200, overrideAccess: true }),
       payload.find({ collection: 'attribute-definitions', where: { active: { equals: true } }, sort: 'order', limit: 200, overrideAccess: true }),
       payload.find({ collection: 'member-attributes', where: { member: { equals: memberId } }, limit: 200, overrideAccess: true }),
@@ -97,8 +112,16 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
     itemName: typeof d.item === 'object' && d.item ? d.item.name : 'Artículo',
     sizeLabel: typeof d.size === 'object' && d.size ? d.size.label : '',
     status: d.status ?? 'delivered',
+    categoryId: idOf(d.category),
+    source: d.source ?? null,
   }))
   const deliveredItemIds = new Set(deliveriesRes.docs.map((d) => idOf(d.item)).filter(Boolean))
+  // También por tipo de prenda: un pack que pide «Camiseta oficial» queda cubierto si el socio
+  // se llevó «Camiseta de tirantes». Comparando sólo por artículo daría un falso pendiente.
+  const deliveredCategoryIds = new Set(
+    deliveriesRes.docs.map((d) => idOf(d.category)).filter(Boolean),
+  )
+  const itemCategoryById = new Map(items.docs.map((i) => [i.id, idOf(i.category)]))
   const pending: { itemId: number; itemName: string }[] = []
   for (const pack of packsRes.docs) {
     const applies =
@@ -108,7 +131,11 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
     for (const line of pack.lines ?? []) {
       const itemId = idOf(line.item)
       const itemName = typeof line.item === 'object' && line.item ? (line.item as { name?: string }).name : null
-      if (itemId && itemName && !deliveredItemIds.has(itemId) && !pending.some((p) => p.itemId === itemId)) {
+      if (!itemId || !itemName) continue
+      const categoryId = itemCategoryById.get(itemId) ?? null
+      const covered =
+        deliveredItemIds.has(itemId) || (categoryId != null && deliveredCategoryIds.has(categoryId))
+      if (!covered && !pending.some((p) => p.itemId === itemId)) {
         pending.push({ itemId, itemName })
       }
     }
@@ -239,7 +266,13 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
                 <Panel>
                   <EntregarEquipacion
                     memberId={member.id}
-                    items={items.docs.map((i) => ({ id: i.id, name: i.name, sizeScale: idOf(i.sizeScale) }))}
+                    categories={categoriesRes.docs.map((c) => ({ id: c.id, name: c.name }))}
+                    items={items.docs.map((i) => ({
+                      id: i.id,
+                      name: i.name,
+                      sizeScale: idOf(i.sizeScale),
+                      category: idOf(i.category),
+                    }))}
                     sizes={sizes.docs.map((s) => ({ id: s.id, label: s.label, scale: idOf(s.scale) }))}
                     deliveries={deliveries}
                     pending={pending}

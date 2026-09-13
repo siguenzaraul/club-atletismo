@@ -6,6 +6,8 @@ import { getClient } from '@/lib/payload'
 import { SponsorsBlock } from '@/components/site/SponsorsBlock'
 import { formatDateTime, seriesColor, seriesLabel } from '@/lib/format'
 import { MediaImage } from '@/components/site/MediaImage'
+import { JsonLd, sportsEventJsonLd } from '@/components/site/JsonLd'
+import { findRaceSponsors, mergeEventSponsors } from '@/lib/sponsors'
 import type { Media, Sponsor } from '@/payload-types'
 
 export const dynamic = 'force-dynamic'
@@ -15,11 +17,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const payload = await getClient()
   const res = await payload.find({ collection: 'events', where: { slug: { equals: slug } }, depth: 1, limit: 1 })
   const event = res.docs[0]
-  if (!event) return { title: 'Evento no encontrado | ABTR' }
+  if (!event) return { title: 'Evento no encontrado' }
   const description = `${formatDateTime(event.date)}${event.location ? ` · ${event.location}` : ''}`
   const image = event.image && typeof event.image === 'object' ? (event.image as Media).url : undefined
   return {
-    title: `${event.title} | ABTR`,
+    title: `${event.title}`,
     description,
     openGraph: { title: event.title, description, images: image ? [image] : undefined },
   }
@@ -42,6 +44,8 @@ export default async function EventDetailPage({
   if (!event) notFound()
 
   const hasImage = event.image && typeof event.image === 'object'
+  // Los patrocinadores automáticos sólo se añaden en la próxima edición activa de la carrera
+  // principal; en ediciones pasadas se conserva sólo lo que se asignó a ese evento.
   let automaticMainRaceSponsors: Sponsor[] = []
   if (event.series === 'carrera-principal') {
     const activeRace = await payload.find({
@@ -57,29 +61,24 @@ export default async function EventDetailPage({
       limit: 1,
     })
     if (activeRace.docs[0]?.id === event.id) {
-      const sponsors = await payload.find({
-        collection: 'sponsors',
-        where: { mainRaceSponsor: { equals: true } },
-        depth: 1,
-        limit: 100,
-      })
-      automaticMainRaceSponsors = sponsors.docs
+      automaticMainRaceSponsors = await findRaceSponsors(payload)
     }
   }
-  const eventSponsors = Array.from(
-    new Map(
-      [
-        ...(Array.isArray(event.sponsors)
-          ? event.sponsors.filter((s): s is Sponsor => typeof s === 'object')
-          : []),
-        ...automaticMainRaceSponsors,
-      ].map((sponsor) => [sponsor.id, sponsor]),
-    ).values(),
-  )
+  const eventSponsors = mergeEventSponsors(event.sponsors, automaticMainRaceSponsors)
 
   return (
     <main>
-      <section className="bg-abtr-black text-white">
+      <JsonLd
+        data={sportsEventJsonLd({
+          title: event.title,
+          slug: event.slug,
+          date: event.date,
+          location: event.location,
+          registrationOpen: event.registrationOpen,
+          imageUrl: event.image && typeof event.image === 'object' ? event.image.url : null,
+        })}
+      />
+      <section className="band-ink">
         <div className="mx-auto max-w-4xl px-6 py-16">
           <Link href="/eventos" className="text-sm text-white/60 hover:text-white">
             ← Eventos
@@ -117,13 +116,13 @@ export default async function EventDetailPage({
           />
         )}
         {event.description && (
-          <div className="prose prose-lg max-w-none">
+          <div className="prose prose-abtr prose-lg max-w-none">
             <RichText data={event.description} />
           </div>
         )}
 
         {eventSponsors.length > 0 && (
-          <div className="mt-16 border-t border-abtr-ink/10 pt-12">
+          <div className="mt-16 border-t border-border pt-12">
             <SponsorsBlock sponsors={eventSponsors} title="Patrocinadores de esta carrera" />
           </div>
         )}

@@ -5,6 +5,12 @@ import { defineConfig, devices } from '@playwright/test'
  * https://github.com/motdotla/dotenv
  */
 import 'dotenv/config'
+// `dotenv/config` sólo lee `.env`, pero Next da prioridad a `.env.local`. Sin esto, los helpers
+// que siembran datos con la Local API (seedTestUser, seedAthletes) abren una base distinta a la
+// del servidor: con `DATABASE_URI` apuntando a Postgres en `.env.local`, sembraban en el SQLite
+// por defecto y el servidor no veía nada.
+import { config as loadEnv } from 'dotenv'
+loadEnv({ path: '.env.local', override: true })
 
 /**
  * See https://playwright.dev/docs/test-configuration.

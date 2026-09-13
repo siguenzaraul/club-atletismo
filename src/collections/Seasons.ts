@@ -52,6 +52,7 @@ export const Seasons: CollectionConfig = {
             data: { isCurrent: false },
             overrideAccess: true,
             context: { skipSeasonSync: true },
+            req,
           })
         }
         void operation

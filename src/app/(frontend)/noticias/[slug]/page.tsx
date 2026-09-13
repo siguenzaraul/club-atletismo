@@ -19,11 +19,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     limit: 1,
   })
   const post = res.docs[0]
-  if (!post) return { title: 'Noticia no encontrada | ABTR' }
+  if (!post) return { title: 'Noticia no encontrada' }
   const description = post.excerpt ?? undefined
   const image = post.cover && typeof post.cover === 'object' ? (post.cover as Media).url : undefined
   return {
-    title: `${post.title} | ABTR`,
+    title: `${post.title}`,
     description,
     openGraph: { title: post.title, description, images: image ? [image] : undefined, type: 'article' },
   }
@@ -45,7 +45,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
-      <Link href="/noticias" className="text-sm text-abtr-ink/60 hover:text-abtr-blue">
+      <Link href="/noticias" className="text-sm text-muted-foreground hover:text-abtr-blue">
         ← Noticias
       </Link>
       <time className="mt-6 block text-sm font-semibold text-abtr-blue">
@@ -63,7 +63,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         />
       )}
       {post.content && (
-        <div className="prose prose-lg mt-10 max-w-none">
+        <div className="prose prose-abtr prose-lg mt-10 max-w-none">
           <RichText data={post.content} />
         </div>
       )}

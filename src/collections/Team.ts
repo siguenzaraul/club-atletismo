@@ -29,6 +29,16 @@ export const Team: CollectionConfig = {
     { name: 'photo', type: 'upload', relationTo: 'media', label: 'Foto' },
     { name: 'bio', type: 'textarea', label: 'Biografía' },
     {
+      name: 'member',
+      type: 'relationship',
+      relationTo: 'members',
+      label: 'Socio vinculado',
+      admin: {
+        description:
+          'Opcional. Si este miembro del equipo también es socio y tiene ficha pública, la tarjeta enlazará a /atletas.',
+      },
+    },
+    {
       name: 'order',
       type: 'number',
       label: 'Orden',

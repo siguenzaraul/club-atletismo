@@ -7,7 +7,8 @@ import { FeaturedRace } from '@/components/site/FeaturedRace'
 import { HomeHero } from '@/components/site/HomeHero'
 import { SponsorsBlock } from '@/components/site/SponsorsBlock'
 import { MediaImage } from '@/components/site/MediaImage'
-import type { Sponsor, Team } from '@/payload-types'
+import { findClubSponsors, findRaceSponsors, mergeEventSponsors } from '@/lib/sponsors'
+import type { Team } from '@/payload-types'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,38 +35,12 @@ export default async function HomePage() {
       depth: 1,
     }),
     payload.find({ collection: 'team', sort: 'order', limit: 3, depth: 1 }),
-    payload.find({
-      collection: 'sponsors',
-      where: {
-        or: [
-          { global: { equals: true } },
-          { clubSponsor: { equals: true } },
-        ],
-      },
-      depth: 1,
-      limit: 100,
-    }),
-    payload.find({
-      collection: 'sponsors',
-      where: { mainRaceSponsor: { equals: true } },
-      depth: 1,
-      limit: 100,
-    }),
+    findClubSponsors(payload),
+    findRaceSponsors(payload),
   ])
 
   const nextRace = featuredRace.docs[0]
-  const nextRaceSponsors = nextRace
-    ? Array.from(
-        new Map(
-          [
-            ...(Array.isArray(nextRace.sponsors)
-              ? nextRace.sponsors.filter((s): s is Sponsor => typeof s === 'object')
-              : []),
-            ...mainRaceSponsors.docs,
-          ].map((sponsor) => [sponsor.id, sponsor]),
-        ).values(),
-      )
-    : []
+  const nextRaceSponsors = nextRace ? mergeEventSponsors(nextRace.sponsors, mainRaceSponsors) : []
 
   return (
     <main>
@@ -102,7 +77,7 @@ export default async function HomePage() {
         <section className="mx-auto max-w-3xl px-6 py-20">
           <h2 className="font-display text-3xl sm:text-4xl">{home.aboutTitle ?? 'Sobre el club'}</h2>
           {home.aboutBody && (
-            <div className="prose prose-lg mt-6 max-w-none text-abtr-ink/80">
+            <div className="prose prose-abtr prose-lg mt-6 max-w-none">
               <RichText data={home.aboutBody} />
             </div>
           )}
@@ -124,13 +99,13 @@ export default async function HomePage() {
             ))}
           </div>
         ) : (
-          <p className="text-abtr-ink/60">Aún no hay eventos programados.</p>
+          <p className="text-muted-foreground">Aún no hay eventos programados.</p>
         )}
       </section>
 
       {/* Equipo */}
       {team.docs.length > 0 && (
-        <section className="bg-abtr-ink/[0.03] py-20">
+        <section className="bg-muted/40 py-20">
           <div className="mx-auto max-w-6xl px-6">
             <h2 className="mb-10 font-display text-3xl sm:text-4xl">El equipo</h2>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -138,7 +113,7 @@ export default async function HomePage() {
                 const hasPhoto = m.photo && typeof m.photo === 'object'
                 return (
                   <div key={m.id} className="rounded-2xl border border-border bg-card p-6">
-                    <div className="relative mb-4 size-16 overflow-hidden rounded-full bg-abtr-ink/10">
+                    <div className="relative mb-4 size-16 overflow-hidden rounded-full bg-muted">
                       {hasPhoto && (
                         <MediaImage
                           media={m.photo}
@@ -151,7 +126,7 @@ export default async function HomePage() {
                     </div>
                     <h3 className="font-display text-lg">{m.name}</h3>
                     {m.role && <p className="text-sm text-abtr-blue">{m.role}</p>}
-                    {m.bio && <p className="mt-2 text-sm text-abtr-ink/60">{m.bio}</p>}
+                    {m.bio && <p className="mt-2 text-sm text-muted-foreground">{m.bio}</p>}
                   </div>
                 )
               })}
@@ -164,9 +139,9 @@ export default async function HomePage() {
       )}
 
       {/* Patrocinadores */}
-      {sponsors.docs.length > 0 && (
+      {sponsors.length > 0 && (
         <section className="mx-auto max-w-6xl px-6 py-20">
-          <SponsorsBlock sponsors={sponsors.docs} title="Patrocinadores del club" />
+          <SponsorsBlock sponsors={sponsors} title="Patrocinadores del club" />
         </section>
       )}
 
@@ -176,7 +151,7 @@ export default async function HomePage() {
           <h2 className="font-display text-4xl uppercase tracking-tight sm:text-5xl">
             Corre con nosotros
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-lg text-white/80">
+          <p className="mx-auto mt-4 max-w-md text-lg text-white">
             Únete al Club de Running Albatera y forma parte del movimiento.
           </p>
           <Link

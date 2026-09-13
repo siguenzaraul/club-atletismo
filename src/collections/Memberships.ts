@@ -53,11 +53,16 @@ export const Memberships: CollectionConfig = {
         const memberId = typeof doc.member === 'object' ? doc.member?.id : doc.member
         const seasonId = typeof doc.season === 'object' ? doc.season?.id : doc.season
         if (!memberId || !seasonId) return
+        // `req` es obligatorio en ambas: en Postgres este hook corre DENTRO de la transacción
+        // del create, que ya mantiene un bloqueo sobre la fila del socio por la clave ajena.
+        // Sin `req`, el update pide otra conexión, espera ese bloqueo y la transacción espera
+        // al update: deadlock. Colgaba el alta entera hasta el timeout de la función.
         const season = await req.payload.findByID({
           collection: 'seasons',
           id: seasonId,
           overrideAccess: true,
           depth: 0,
+          req,
         })
         if (!season?.isCurrent) return
         const typeId = typeof doc.type === 'object' ? doc.type?.id : doc.type
@@ -69,6 +74,7 @@ export const Memberships: CollectionConfig = {
             membershipStatus: paymentToMemberStatus(doc.paymentStatus),
           },
           overrideAccess: true,
+          req,
         })
       },
     ],

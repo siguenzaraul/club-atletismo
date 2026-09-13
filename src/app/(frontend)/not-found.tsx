@@ -4,7 +4,7 @@ import { BrandPattern } from '@/components/BrandPattern'
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-[70vh] flex-col items-center justify-center bg-abtr-black px-6 py-24 text-center text-white">
+    <main className="flex min-h-[70vh] flex-col items-center justify-center band-ink px-6 py-24 text-center">
       <BrandPattern size={120} variant="mono-dark" decorative />
       <p className="mt-8 font-display text-7xl uppercase leading-none text-abtr-yellow">404</p>
       <h1 className="mt-4 font-display text-2xl uppercase tracking-tight">Esta ruta no existe</h1>

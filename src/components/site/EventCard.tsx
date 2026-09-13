@@ -12,7 +12,7 @@ export function EventCard({ event }: { event: Event }) {
       href={`/eventos/${event.slug}`}
       className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition hover:border-foreground/30 hover:shadow-lg"
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-abtr-ink/5">
+      <div className="relative aspect-[16/10] overflow-hidden bg-muted">
         {hasImage ? (
           <MediaImage
             media={event.image}
@@ -22,7 +22,7 @@ export function EventCard({ event }: { event: Event }) {
             className="object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center font-display text-3xl text-abtr-ink/20">
+          <div className="flex h-full items-center justify-center font-display text-3xl text-muted-foreground/50">
             ABTR
           </div>
         )}
@@ -35,9 +35,9 @@ export function EventCard({ event }: { event: Event }) {
       <div className="flex flex-1 flex-col gap-2 p-5">
         <time className="text-sm font-semibold text-abtr-blue">{formatDate(event.date)}</time>
         <h3 className="font-display text-xl leading-tight">{event.title}</h3>
-        {event.location && <p className="text-sm text-abtr-ink/60">{event.location}</p>}
+        {event.location && <p className="text-sm text-muted-foreground">{event.location}</p>}
         {event.registrationOpen && (
-          <span className="mt-auto pt-2 text-sm font-bold text-abtr-red">Inscripciones abiertas →</span>
+          <span className="mt-auto pt-2 text-sm font-bold text-destructive">Inscripciones abiertas →</span>
         )}
       </div>
     </Link>

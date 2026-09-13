@@ -21,15 +21,19 @@ test.describe('Admin Panel', () => {
   test('can navigate to dashboard', async () => {
     await page.goto('http://localhost:3000/admin')
     await expect(page).toHaveURL('http://localhost:3000/admin')
-    const dashboardArtifact = page.locator('.step-nav__first').first()
-    await expect(dashboardArtifact).toBeVisible()
+    // Por rol, no por clases internas de Payload (`.step-nav__first` es de Payload 2).
+    const nav = page.getByRole('navigation').first()
+    await expect(nav).toBeVisible()
+    await expect(nav.getByRole('link', { name: 'Socios', exact: true })).toBeVisible()
   })
 
   test('can navigate to list view', async () => {
     await page.goto('http://localhost:3000/admin/collections/users')
-    await expect(page).toHaveURL('http://localhost:3000/admin/collections/users')
-    const listViewArtifact = page.locator('h1', { hasText: 'Users' }).first()
-    await expect(listViewArtifact).toBeVisible()
+    // Payload añade `?depth=&limit=` al entrar en el listado, así que la URL no es exacta.
+    await expect(page).toHaveURL(/\/admin\/collections\/users(\?|$)/)
+    // El panel está en español y la colección tiene labels propios ("Usuarios (staff)"),
+    // así que buscar "Users" nunca podía funcionar.
+    await expect(page.getByRole('heading', { name: 'Usuarios (staff)' }).first()).toBeVisible()
   })
 
   test('can navigate to edit view', async () => {

@@ -38,6 +38,16 @@ export const Events: CollectionConfig = {
     },
     { name: 'date', type: 'date', label: 'Fecha', required: true },
     { name: 'location', type: 'text', label: 'Lugar' },
+    {
+      name: 'distanceMeters',
+      type: 'number',
+      label: 'Distancia principal (m)',
+      min: 0,
+      admin: {
+        description:
+          'Opcional. 5000 = 5K, 10000 = 10K, 21097 = media, 42195 = maratón. Se usa como distancia por defecto de los resultados de este evento.',
+      },
+    },
     { name: 'image', type: 'upload', relationTo: 'media', label: 'Imagen' },
     { name: 'description', type: 'richText', label: 'Descripción' },
     {

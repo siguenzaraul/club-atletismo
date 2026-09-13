@@ -26,6 +26,8 @@ export async function login({
 
   await page.waitForURL(`${serverURL}/admin`)
 
-  const dashboardArtifact = page.locator('.step-nav__first')
-  await expect(dashboardArtifact).toBeVisible()
+  // `.step-nav__first` era una clase interna de Payload 2 que ya no existe en 3.x
+  // (la actual es `.step-nav__home`), así que este test llevaba roto desde el inicio.
+  // Se comprueba por rol: no depende de las clases internas del paquete.
+  await expect(page.getByRole('navigation').first()).toBeVisible()
 }

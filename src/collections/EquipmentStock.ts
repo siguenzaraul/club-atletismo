@@ -51,10 +51,15 @@ export const EquipmentStock: CollectionConfig = {
   hooks: {
     // Keep "available" consistent when staff edit the purchased total.
     beforeChange: [
-      ({ data }) => {
-        const total = data.quantityTotal ?? 0
-        const delivered = data.quantityDelivered ?? 0
-        const reserved = data.quantityReserved ?? 0
+      ({ data, originalDoc }) => {
+        // Respaldo en `originalDoc` por seguridad, no porque haga falta hoy: comprobado que en
+        // un update parcial Payload ya fusiona el documento existente en `data` antes de este
+        // hook, así que `?? 0` no llega a dispararse. Si esa fusión cambiara, sin el respaldo
+        // un `recalcStock` (que no manda `quantityTotal`) pondría las unidades compradas a 0.
+        // Lo cubren los tests de `tests/int/equipment.int.spec.ts` → describe «stock».
+        const total = data.quantityTotal ?? originalDoc?.quantityTotal ?? 0
+        const delivered = data.quantityDelivered ?? originalDoc?.quantityDelivered ?? 0
+        const reserved = data.quantityReserved ?? originalDoc?.quantityReserved ?? 0
         data.quantityAvailable = total - delivered - reserved
         return data
       },

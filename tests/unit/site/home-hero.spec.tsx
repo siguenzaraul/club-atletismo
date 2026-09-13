@@ -39,11 +39,29 @@ describe('HomeHero', () => {
     expect(screen.queryByText('Albatera · Alicante')).toBeNull()
   })
 
-  it('uses white title text in the dark theme and dark title text in the light theme', () => {
-    const { rerender } = render(<HomeHero {...base} theme="dark" />)
-    expect(screen.getByRole('heading', { name: base.title }).className).toContain('text-white')
+  // La prop `theme` describe sobre qué se pinta el texto, no el esquema de color del sitio.
+  // Sin foto de fondo el hero "claro" es la superficie del sitio y debe seguir al tema: si
+  // usara `text-abtr-black` fijo, en modo oscuro saldría negro sobre negro.
+  const titleClass = () => screen.getByRole('heading', { name: base.title }).className
 
-    rerender(<HomeHero {...base} theme="light" />)
-    expect(screen.getByRole('heading', { name: base.title }).className).toContain('text-abtr-black')
+  it('sin foto y tema oscuro, pinta una banda negra de marca con texto blanco', () => {
+    render(<HomeHero {...base} theme="dark" />)
+    expect(titleClass()).toContain('text-white')
+  })
+
+  it('sin foto y tema claro, usa el token que se voltea con el tema del sitio', () => {
+    render(<HomeHero {...base} theme="light" />)
+    expect(titleClass()).toContain('text-foreground')
+    expect(titleClass()).not.toContain('text-abtr-black')
+  })
+
+  it('con foto de fondo, el tema del CMS manda: el velo garantiza el contraste', () => {
+    const backgroundImage = { id: 1, url: '/api/media/file/hero.jpg', alt: '', updatedAt: '', createdAt: '' }
+
+    const { rerender } = render(<HomeHero {...base} theme="light" backgroundImage={backgroundImage} />)
+    expect(titleClass()).toContain('text-abtr-black')
+
+    rerender(<HomeHero {...base} theme="dark" backgroundImage={backgroundImage} />)
+    expect(titleClass()).toContain('text-white')
   })
 })

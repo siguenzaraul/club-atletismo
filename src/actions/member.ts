@@ -1,17 +1,22 @@
 'use server'
 
 import { getClient } from '@/lib/payload'
-import { getCurrentMember } from '@/actions/auth'
+import { currentMember } from '@/lib/session'
 import { valueFieldFor, type AttributeType } from '@/lib/attributes'
 import { MEMBER_CATEGORIES } from '@/collections/Members'
+import { parseDistanceToMeters } from '@/lib/distances'
+import { parseMarkToSeconds } from '@/lib/marks'
 
 export type ActionResult = { ok: boolean; error?: string; message?: string }
+
+/** Máximo de filas de marcas manuales que acepta el formulario, como tope de seguridad. */
+const MAX_PERSONAL_BESTS = 20
 
 const VALID_CATEGORIES = MEMBER_CATEGORIES.map((c) => c.value) as readonly string[]
 
 /** A logged-in member cancels one of their own registrations. */
 export const cancelRegistrationAction = async (registrationId: number): Promise<ActionResult> => {
-  const member = await getCurrentMember()
+  const member = await currentMember()
   if (!member) return { ok: false, error: 'Debes iniciar sesión.' }
   const payload = await getClient()
 
@@ -40,7 +45,7 @@ export const updateProfileAction = async (
   _prev: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> => {
-  const member = await getCurrentMember()
+  const member = await currentMember()
   if (!member) return { ok: false, error: 'Debes iniciar sesión.' }
   const payload = await getClient()
 
@@ -105,4 +110,75 @@ export const updateProfileAction = async (
   }
 
   return { ok: true, message: 'Perfil actualizado.' }
+}
+
+/**
+ * El socio publica (o despublica) su ficha y edita sus marcas manuales.
+ *
+ * Va en una acción SEPARADA de `updateProfileAction` a propósito: aquélla ya funciona en
+ * producción y no merece la pena arriesgar una regresión por añadirle campos.
+ */
+export const updatePublicProfileAction = async (
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> => {
+  const member = await currentMember()
+  if (!member) return { ok: false, error: 'Debes iniciar sesión.' }
+  const payload = await getClient()
+
+  const publicProfile = formData.get('publicProfile') === 'yes'
+  const publicBio = String(formData.get('publicBio') ?? '').trim()
+
+  if (publicBio.length > 500) {
+    return { ok: false, error: 'La biografía no puede pasar de 500 caracteres.' }
+  }
+
+  // Filas dinámicas: pb_<i>_distancia, pb_<i>_marca, pb_<i>_fecha, pb_<i>_carrera.
+  const personalBests: {
+    distanceMeters: number
+    mark: string
+    date?: string | null
+    eventName?: string | null
+  }[] = []
+
+  for (let i = 0; i < MAX_PERSONAL_BESTS; i++) {
+    const distanceRaw = String(formData.get(`pb_${i}_distancia`) ?? '').trim()
+    const markRaw = String(formData.get(`pb_${i}_marca`) ?? '').trim()
+    if (!distanceRaw && !markRaw) continue
+
+    const distanceMeters = parseDistanceToMeters(distanceRaw)
+    if (!distanceMeters) {
+      return { ok: false, error: `No entiendo la distancia "${distanceRaw}". Prueba con 10K, 21097 o "media maratón".` }
+    }
+    if (parseMarkToSeconds(markRaw) === null) {
+      return { ok: false, error: `No entiendo la marca "${markRaw}". Usa un formato como 42:15 o 1:23:45.` }
+    }
+
+    const date = String(formData.get(`pb_${i}_fecha`) ?? '').trim()
+    const eventName = String(formData.get(`pb_${i}_carrera`) ?? '').trim()
+    personalBests.push({
+      distanceMeters,
+      mark: markRaw,
+      date: date ? new Date(date).toISOString() : null,
+      eventName: eventName || null,
+    })
+  }
+
+  try {
+    // `markSeconds` y el slug los calcula el `beforeChange` de la colección.
+    await payload.update({
+      collection: 'members',
+      id: member.id,
+      data: { publicProfile, publicBio: publicBio || null, personalBests },
+      overrideAccess: true,
+    })
+  } catch (err) {
+    payload.logger.error({ err }, 'updatePublicProfileAction failed')
+    return { ok: false, error: 'No se pudo guardar tu ficha pública.' }
+  }
+
+  return {
+    ok: true,
+    message: publicProfile ? 'Ficha pública actualizada.' : 'Tu ficha ya no es pública.',
+  }
 }

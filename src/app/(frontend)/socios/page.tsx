@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { CalendarCheckIcon, MedalIcon, ShirtIcon, TicketIcon } from 'lucide-react'
 
 import { getClient } from '@/lib/payload'
-import { getCurrentMember } from '@/actions/auth'
+import { currentMember } from '@/lib/session'
 import { getCurrentSeason } from '@/lib/membership'
 import { InscribeButton } from '@/components/site/InscribeButton'
 import { CancelRegistrationButton } from '@/components/site/CancelRegistrationButton'
@@ -17,7 +17,7 @@ import { StatusBadge } from '@/components/ui/status-badge'
 import { EmptyState } from '@/components/ui/empty-state'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Zona de socios | ABTR' }
+export const metadata = { title: 'Zona de socios' }
 
 const idOf = (v: unknown): number | null =>
   v == null ? null : typeof v === 'object' ? ((v as { id?: number }).id ?? null) : (v as number)
@@ -45,9 +45,14 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   )
 }
 
-export default async function MembersAreaPage() {
-  const member = await getCurrentMember()
+export default async function MembersAreaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ alta?: string }>
+}) {
+  const member = await currentMember()
   if (!member) redirect('/login')
+  const { alta } = await searchParams
 
   const payload = await getClient()
   const season = await getCurrentSeason(payload)
@@ -66,37 +71,52 @@ export default async function MembersAreaPage() {
       : Promise.resolve({ docs: [] as { appliesToAll?: boolean | null; membershipTypes?: unknown[]; lines?: { item?: unknown }[] }[] }),
   ])
 
-  const companionEntries = await Promise.all(
-    openEvents.docs.map(async (event) => {
-      const attendees = await payload.find({
+  // Acompañantes de los eventos abiertos. Una sola consulta para todos: antes iba una por
+  // evento (N+1) y con `depth: 1` traía a memoria el email, el teléfono y el nº de federación
+  // de cada inscrito sólo para pintar nombres. Aquí se piden los ids y luego sólo `name`.
+  const openEventIds = openEvents.docs.map((e) => e.id)
+  const attendees = openEventIds.length
+    ? await payload.find({
         collection: 'event-registrations',
         where: {
-          and: [
-            { event: { equals: event.id } },
-            { status: { not_equals: 'cancelled' } },
-          ],
+          and: [{ event: { in: openEventIds } }, { status: { not_equals: 'cancelled' } }],
         },
-        depth: 1,
+        depth: 0,
         pagination: false,
         overrideAccess: true,
       })
-      const names = Array.from(
-        new Map(
-          attendees.docs.flatMap((registration) => {
-            const attendee =
-              typeof registration.member === 'object' && registration.member
-                ? registration.member
-                : null
-            return attendee && attendee.id !== member.id && attendee.name
-              ? [[attendee.id, attendee.name] as const]
-              : []
-          }),
-        ).values(),
-      ).sort((a, b) => a.localeCompare(b, 'es'))
-      return [event.id, names] as const
-    }),
-  )
-  const companionsByEvent = new Map(companionEntries)
+    : { docs: [] as { event?: unknown; member?: unknown }[] }
+
+  const attendeeIds = Array.from(
+    new Set(attendees.docs.map((r) => idOf(r.member)).filter((id): id is number => Boolean(id))),
+  ).filter((id) => id !== member.id)
+
+  const namesById = new Map<number, string>()
+  if (attendeeIds.length) {
+    const membersRes = await payload.find({
+      collection: 'members',
+      where: { id: { in: attendeeIds } },
+      // Lista blanca explícita: el `select` recorta a nivel de query, así que ni se leen de la
+      // base de datos los campos personales. Misma doctrina que src/lib/public-athletes.ts.
+      select: { name: true },
+      depth: 0,
+      pagination: false,
+      overrideAccess: true,
+    })
+    for (const m of membersRes.docs) if (m.name) namesById.set(m.id, m.name)
+  }
+
+  const companionsByEvent = new Map<number, string[]>()
+  for (const eventId of openEventIds) companionsByEvent.set(eventId, [])
+  for (const registration of attendees.docs) {
+    const eventId = idOf(registration.event)
+    const attendeeId = idOf(registration.member)
+    if (!eventId || !attendeeId || attendeeId === member.id) continue
+    const name = namesById.get(attendeeId)
+    const list = companionsByEvent.get(eventId)
+    if (name && list && !list.includes(name)) list.push(name)
+  }
+  for (const list of companionsByEvent.values()) list.sort((a, b) => a.localeCompare(b, 'es'))
 
   const membership = membershipRes.docs[0]
   const membershipTypeName =
@@ -132,6 +152,15 @@ export default async function MembersAreaPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+      {alta === 'ok' && (
+        <p
+          role="status"
+          className="mb-6 rounded-xl border border-abtr-blue/40 bg-abtr-blue/10 px-4 py-3 text-sm text-foreground/80"
+        >
+          <strong className="text-foreground">¡Bienvenido al club!</strong> Ya tienes tu cuenta. El
+          club confirmará tu cuota en los próximos días.
+        </p>
+      )}
       {/* Carnet de socio: claro en modo claro, oscuro en modo oscuro, con el sello del club. */}
       <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 text-foreground shadow-sm sm:p-8 dark:border-white/10 dark:bg-black dark:text-white">
         <div

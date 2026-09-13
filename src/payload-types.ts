@@ -84,6 +84,7 @@ export interface Config {
     'member-attributes': MemberAttribute;
     'size-scales': SizeScale;
     sizes: Size;
+    'equipment-categories': EquipmentCategory;
     'equipment-items': EquipmentItem;
     'equipment-stock': EquipmentStock;
     'equipment-deliveries': EquipmentDelivery;
@@ -105,6 +106,9 @@ export interface Config {
     'size-scales': {
       sizes: 'sizes';
     };
+    'equipment-categories': {
+      items: 'equipment-items';
+    };
   };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
@@ -123,6 +127,7 @@ export interface Config {
     'member-attributes': MemberAttributesSelect<false> | MemberAttributesSelect<true>;
     'size-scales': SizeScalesSelect<false> | SizeScalesSelect<true>;
     sizes: SizesSelect<false> | SizesSelect<true>;
+    'equipment-categories': EquipmentCategoriesSelect<false> | EquipmentCategoriesSelect<true>;
     'equipment-items': EquipmentItemsSelect<false> | EquipmentItemsSelect<true>;
     'equipment-stock': EquipmentStockSelect<false> | EquipmentStockSelect<true>;
     'equipment-deliveries': EquipmentDeliveriesSelect<false> | EquipmentDeliveriesSelect<true>;
@@ -140,10 +145,12 @@ export interface Config {
   globals: {
     'home-page': HomePage;
     'site-settings': SiteSetting;
+    'registration-form': RegistrationForm;
   };
   globalsSelect: {
     'home-page': HomePageSelect<false> | HomePageSelect<true>;
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+    'registration-form': RegistrationFormSelect<false> | RegistrationFormSelect<true>;
   };
   locale: 'es';
   widgets: {
@@ -262,6 +269,34 @@ export interface Member {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  /**
+   * Si lo activas, tu nombre, foto, categoría y marcas serán visibles en /atletas.
+   */
+  publicProfile?: boolean | null;
+  /**
+   * Se genera al publicar la ficha por primera vez y ya no cambia.
+   */
+  slug?: string | null;
+  /**
+   * Máximo 500 caracteres. Se muestra en tu ficha pública.
+   */
+  publicBio?: string | null;
+  /**
+   * Para carreras ajenas al club. Las de nuestras pruebas se calculan solas a partir de los resultados.
+   */
+  personalBests?:
+    | {
+        /**
+         * 5000, 10000, 21097, 42195…
+         */
+        distanceMeters: number;
+        mark: string;
+        date?: string | null;
+        eventName?: string | null;
+        markSeconds?: number | null;
+        id?: string | null;
+      }[]
+    | null;
   attributes?: {
     docs?: (number | MemberAttribute)[];
     hasNextPage?: boolean;
@@ -394,6 +429,9 @@ export interface EquipmentDelivery {
   payment?: ('included' | 'paid' | 'pending') | null;
   deliveredAt?: string | null;
   label?: string | null;
+  category?: (number | null) | EquipmentCategory;
+  slotKey?: string | null;
+  source?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -414,12 +452,51 @@ export interface EquipmentItem {
    */
   slug?: string | null;
   /**
+   * Parte de arriba, parte de abajo… Los artículos sin tipo salen en «Otros».
+   */
+  category?: (number | null) | EquipmentCategory;
+  /**
    * Qué tallas admite este artículo.
    */
   sizeScale: number | SizeScale;
   description?: string | null;
   active?: boolean | null;
   order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Parte de arriba, parte de abajo… Dentro de cada tipo, el socio elige una sola prenda.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "equipment-categories".
+ */
+export interface EquipmentCategory {
+  id: number;
+  /**
+   * Ej. Parte de arriba, Parte de abajo
+   */
+  name: string;
+  /**
+   * Se genera del título si lo dejas vacío.
+   */
+  slug?: string | null;
+  /**
+   * Cómo se le pregunta al socio. Si lo dejas vacío se usa el nombre.
+   */
+  publicLabel?: string | null;
+  description?: string | null;
+  /**
+   * Desmárcalo sólo si un socio puede llevarse varias prendas distintas de este tipo.
+   */
+  exclusive?: boolean | null;
+  active?: boolean | null;
+  order?: number | null;
+  items?: {
+    docs?: (number | EquipmentItem)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -458,6 +535,10 @@ export interface Size {
    */
   label: string;
   scale: number | SizeScale;
+  /**
+   * Desactívala para dejar de ofrecerla. Las entregas antiguas con esta talla no se tocan.
+   */
+  active?: boolean | null;
   order?: number | null;
   updatedAt: string;
   createdAt: string;
@@ -489,6 +570,10 @@ export interface Event {
   series: 'carrera-principal' | 'social-run' | 'club' | 'carrera-externa';
   date: string;
   location?: string | null;
+  /**
+   * Opcional. 5000 = 5K, 10000 = 10K, 21097 = media, 42195 = maratón. Se usa como distancia por defecto de los resultados de este evento.
+   */
+  distanceMeters?: number | null;
   image?: (number | null) | Media;
   description?: {
     root: {
@@ -528,15 +613,23 @@ export interface Sponsor {
   logo?: (number | null) | Media;
   url?: string | null;
   /**
-   * El nivel determina el orden y el tamaño con el que aparece el patrocinador en la web.
+   * Principal: en toda la web. Patrocinador: portada y listado. Colaborador: listado.
    */
   tier: 'principal' | 'oro' | 'plata' | 'bronce' | 'colaborador';
   /**
-   * Aparece en toda la web y en el pie de página.
+   * Menor = antes, dentro de su nivel.
+   */
+  order?: number | null;
+  /**
+   * Desmárcalo para retirarlo sin borrarlo.
+   */
+  active?: boolean | null;
+  /**
+   * Pie de página, portada, carreras y listado de patrocinadores.
    */
   global?: boolean | null;
   /**
-   * Aparece en los espacios generales del club y en la portada.
+   * Bloque «Patrocinadores del club» de la página de inicio.
    */
   clubSponsor?: boolean | null;
   /**
@@ -564,6 +657,14 @@ export interface Result {
    * Ej. 00:42:15 o 38:20
    */
   mark?: string | null;
+  /**
+   * Si la dejas vacía se hereda de la distancia principal del evento. 10000 = 10K, 21097 = media.
+   */
+  distanceMeters?: number | null;
+  /**
+   * Se calcula solo a partir de la marca. Es lo que permite ordenar y comparar.
+   */
+  markSeconds?: number | null;
   category?: ('sub18' | 'senior' | 'master' | 'popular') | null;
   updatedAt: string;
   createdAt: string;
@@ -679,6 +780,10 @@ export interface Team {
   role?: string | null;
   photo?: (number | null) | Media;
   bio?: string | null;
+  /**
+   * Opcional. Si este miembro del equipo también es socio y tiene ficha pública, la tarjeta enlazará a /atletas.
+   */
+  member?: (number | null) | Member;
   order?: number | null;
   updatedAt: string;
   createdAt: string;
@@ -835,6 +940,10 @@ export interface PayloadLockedDocument {
         value: number | Size;
       } | null)
     | ({
+        relationTo: 'equipment-categories';
+        value: number | EquipmentCategory;
+      } | null)
+    | ({
         relationTo: 'equipment-items';
         value: number | EquipmentItem;
       } | null)
@@ -948,6 +1057,19 @@ export interface MembersSelect<T extends boolean = true> {
   deliveries?: T;
   registrations?: T;
   raceResults?: T;
+  publicProfile?: T;
+  slug?: T;
+  publicBio?: T;
+  personalBests?:
+    | T
+    | {
+        distanceMeters?: T;
+        mark?: T;
+        date?: T;
+        eventName?: T;
+        markSeconds?: T;
+        id?: T;
+      };
   attributes?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1009,6 +1131,7 @@ export interface EventsSelect<T extends boolean = true> {
   series?: T;
   date?: T;
   location?: T;
+  distanceMeters?: T;
   image?: T;
   description?: T;
   registrationOpen?: T;
@@ -1041,6 +1164,8 @@ export interface ResultsSelect<T extends boolean = true> {
   dorsal?: T;
   position?: T;
   mark?: T;
+  distanceMeters?: T;
+  markSeconds?: T;
   category?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1054,6 +1179,7 @@ export interface TeamSelect<T extends boolean = true> {
   role?: T;
   photo?: T;
   bio?: T;
+  member?: T;
   order?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1067,6 +1193,8 @@ export interface SponsorsSelect<T extends boolean = true> {
   logo?: T;
   url?: T;
   tier?: T;
+  order?: T;
+  active?: T;
   global?: T;
   clubSponsor?: T;
   mainRaceSponsor?: T;
@@ -1177,7 +1305,24 @@ export interface SizeScalesSelect<T extends boolean = true> {
 export interface SizesSelect<T extends boolean = true> {
   label?: T;
   scale?: T;
+  active?: T;
   order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "equipment-categories_select".
+ */
+export interface EquipmentCategoriesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  publicLabel?: T;
+  description?: T;
+  exclusive?: T;
+  active?: T;
+  order?: T;
+  items?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1188,6 +1333,7 @@ export interface SizesSelect<T extends boolean = true> {
 export interface EquipmentItemsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
+  category?: T;
   sizeScale?: T;
   description?: T;
   active?: T;
@@ -1224,6 +1370,9 @@ export interface EquipmentDeliveriesSelect<T extends boolean = true> {
   payment?: T;
   deliveredAt?: T;
   label?: T;
+  category?: T;
+  slotKey?: T;
+  source?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1380,6 +1529,46 @@ export interface SiteSetting {
   createdAt?: string | null;
 }
 /**
+ * Qué se pide al darse de alta en la web y qué es obligatorio.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "registration-form".
+ */
+export interface RegistrationForm {
+  id: number;
+  /**
+   * Opcional. Aparece encima de los campos.
+   */
+  intro?: string | null;
+  phoneEnabled?: boolean | null;
+  phoneRequired?: boolean | null;
+  membershipTypeEnabled?: boolean | null;
+  membershipTypeRequired?: boolean | null;
+  /**
+   * Cada fila añade al formulario un desplegable de prenda y, si quieres, el de talla. Nace vacío: hasta que añadas una fila, el formulario no cambia.
+   */
+  garments?:
+    | {
+        category: number | EquipmentCategory;
+        enabled?: boolean | null;
+        required?: boolean | null;
+        askSize?: boolean | null;
+        help?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Crea la entrega como «Reservada» y descuenta del stock disponible. Si lo desmarcas se guarda como «Solicitada» y no descuenta.
+   */
+  reserveStock?: boolean | null;
+  /**
+   * Si lo desmarcas, cuando no queden unidades el socio pasa a lista de espera («Solicitada») en vez de dejar el stock en negativo.
+   */
+  allowOverbooking?: boolean | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "home-page_select".
  */
@@ -1420,6 +1609,32 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   brandPrimary?: T;
   brandSecondary?: T;
   brandAccent?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "registration-form_select".
+ */
+export interface RegistrationFormSelect<T extends boolean = true> {
+  intro?: T;
+  phoneEnabled?: T;
+  phoneRequired?: T;
+  membershipTypeEnabled?: T;
+  membershipTypeRequired?: T;
+  garments?:
+    | T
+    | {
+        category?: T;
+        enabled?: T;
+        required?: T;
+        askSize?: T;
+        help?: T;
+        id?: T;
+      };
+  reserveStock?: T;
+  allowOverbooking?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

@@ -38,6 +38,47 @@ const VEIL: Record<HeroTheme, Record<HeroOverlay, number>> = {
   light: { none: 0, subtle: 0.35, medium: 0.62, strong: 0.82 },
 }
 
+/**
+ * Superficie sobre la que se pinta el hero. Con foto manda la prop `theme` del CMS (el velo
+ * garantiza el contraste y es opaco al tema del sitio). Sin foto: `ink` es una banda negra de
+ * marca, idéntica en claro y oscuro; `paper` es la superficie del sitio y SÍ sigue al tema.
+ */
+type HeroSurface = 'photo-dark' | 'photo-light' | 'ink' | 'paper'
+
+const SURFACE: Record<
+  HeroSurface,
+  { bg: string; title: string; eyebrow: string; subtitle: string; secondary: string }
+> = {
+  'photo-dark': {
+    bg: '',
+    title: 'text-white',
+    eyebrow: 'text-abtr-yellow',
+    subtitle: 'text-white/85',
+    secondary: 'border-white/40 text-white hover:bg-white hover:text-abtr-black',
+  },
+  'photo-light': {
+    bg: '',
+    title: 'text-abtr-black',
+    eyebrow: 'text-abtr-red',
+    subtitle: 'text-abtr-black/70',
+    secondary: 'border-abtr-black/30 text-abtr-black hover:bg-abtr-black hover:text-white',
+  },
+  ink: {
+    bg: 'band-ink',
+    title: 'text-white',
+    eyebrow: 'text-abtr-yellow',
+    subtitle: 'text-white/85',
+    secondary: 'border-white/40 text-white hover:bg-white hover:text-abtr-black',
+  },
+  paper: {
+    bg: 'bg-background',
+    title: 'text-foreground',
+    eyebrow: 'text-abtr-red',
+    subtitle: 'text-muted-foreground',
+    secondary: 'border-foreground/30 text-foreground hover:bg-foreground hover:text-background',
+  },
+}
+
 function overlayGradient(theme: HeroTheme, overlay: HeroOverlay, align: HeroAlign): string | undefined {
   const base = VEIL[theme][overlay]
   if (base === 0) return undefined
@@ -72,12 +113,13 @@ export function HomeHero({
   const hasForeground = foregroundImage && typeof foregroundImage === 'object'
   const showPattern = !hasForeground && showBrandPattern !== false
 
-  const titleColor = isDark ? 'text-white' : 'text-abtr-black'
-  const eyebrowColor = isDark ? 'text-abtr-yellow' : 'text-abtr-red'
-  const subtitleColor = isDark ? 'text-white/85' : 'text-abtr-black/70'
-  const secondaryBtn = isDark
-    ? 'border-white/40 text-white hover:bg-white hover:text-abtr-black'
-    : 'border-abtr-black/30 text-abtr-black hover:bg-abtr-black hover:text-white'
+  // `theme` describe SOBRE QUÉ se pinta el texto (foto oscura / foto clara), no el esquema de
+  // color del sitio. Sin foto de fondo, un hero "claro" caía en `bg-background` (que sí se
+  // voltea con el tema) pintando `text-abtr-black` encima: título negro sobre fondo oscuro.
+  // La superficie desambigua ambas cosas.
+  const surface: HeroSurface = hasBg ? (isDark ? 'photo-dark' : 'photo-light') : isDark ? 'ink' : 'paper'
+  const { title: titleColor, eyebrow: eyebrowColor, subtitle: subtitleColor, secondary: secondaryBtn } =
+    SURFACE[surface]
 
   const gradient = hasBg ? overlayGradient(theme, overlay, align) : undefined
 
@@ -143,7 +185,7 @@ export function HomeHero({
 
   return (
     <section
-      className={`relative overflow-hidden ${HEIGHT[height]} ${!hasBg ? (isDark ? 'bg-abtr-black' : 'bg-background') : ''}`}
+      className={`relative overflow-hidden ${HEIGHT[height]} ${SURFACE[surface].bg}`}
     >
       {hasBg && (
         <MediaImage

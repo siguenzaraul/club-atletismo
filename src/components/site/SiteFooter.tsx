@@ -3,20 +3,21 @@ import Link from 'next/link'
 import { getClient } from '@/lib/payload'
 import { Logo } from './Logo'
 import { SponsorsBlock } from './SponsorsBlock'
+import { findFooterSponsors } from '@/lib/sponsors'
 
 export async function SiteFooter() {
   const payload = await getClient()
   const [settings, globalSponsors] = await Promise.all([
     payload.findGlobal({ slug: 'site-settings' }),
-    payload.find({ collection: 'sponsors', where: { global: { equals: true } }, depth: 1, limit: 50 }),
+    findFooterSponsors(payload),
   ])
 
   return (
-    <footer className="bg-abtr-black text-white">
+    <footer className="band-ink">
       <div className="mx-auto max-w-6xl px-6 py-16">
-        {globalSponsors.docs.length > 0 && (
+        {globalSponsors.length > 0 && (
           <div className="mb-16 border-b border-white/10 pb-16">
-            <SponsorsBlock sponsors={globalSponsors.docs} title="Con el apoyo de" dark />
+            <SponsorsBlock sponsors={globalSponsors} title="Con el apoyo de" dark />
           </div>
         )}
         <div className="flex flex-col justify-between gap-10 md:flex-row">

@@ -1,11 +1,17 @@
 'use server'
 
-import { headers as nextHeaders } from 'next/headers'
 import { getClient } from '@/lib/payload'
+import { currentStaff } from '@/lib/session'
 import { getCurrentSeason, paymentToMemberStatus } from '@/lib/membership'
+import { ensureStandardSizes, recalcStock } from '@/lib/equipment'
+import { isDuplicateIn } from '@/lib/registration'
+import { DELIVERY_PAYMENTS, DELIVERY_STATUSES } from '@/collections/EquipmentDeliveries'
 import { valueFieldFor, type AttributeType } from '@/lib/attributes'
 import { parseCsv } from '@/lib/csv'
+import { parseDistanceToMeters } from '@/lib/distances'
+import { parseMarkToSeconds } from '@/lib/marks'
 import { MEMBER_CATEGORIES } from '@/collections/Members'
+import type { Where } from 'payload'
 import type { User } from '@/payload-types'
 
 export type StaffResult = { ok: boolean; error?: string; message?: string }
@@ -13,12 +19,7 @@ export type StaffResult = { ok: boolean; error?: string; message?: string }
 const VALID_CATEGORIES = MEMBER_CATEGORIES.map((c) => c.value) as readonly string[]
 
 /** Returns the logged-in staff user (users collection), or null. */
-export const getCurrentStaff = async (): Promise<User | null> => {
-  const payload = await getClient()
-  const { user } = await payload.auth({ headers: await nextHeaders() })
-  if (user && user.collection === 'users') return user as User
-  return null
-}
+export const getCurrentStaff = async (): Promise<User | null> => currentStaff()
 
 /** Guard used by every mutation below. */
 const requireStaff = async () => {
@@ -144,14 +145,175 @@ export const entregarEquipacionAction = async (
         quantity,
         status: 'delivered',
         payment: 'included',
+        source: 'staff',
       },
       overrideAccess: true,
     })
   } catch (err) {
+    // El índice único de `slotKey` cierra la exclusividad por tipo de prenda a nivel de base de
+    // datos. Sin este mensaje, el staff vería un error genérico sin entender por qué.
+    if (isDuplicateIn(err, 'equipment-deliveries')) {
+      return {
+        ok: false,
+        error:
+          'Ya tiene una prenda de ese tipo esta temporada. Cámbiala o márcala como devuelta antes de entregar otra.',
+      }
+    }
     payload.logger.error({ err }, 'entregarEquipacionAction failed')
     return { ok: false, error: 'No se pudo registrar la entrega.' }
   }
   return { ok: true, message: 'Equipación entregada.' }
+}
+
+/**
+ * Edita una entrega existente (talla, artículo, cantidad, estado o pago).
+ *
+ * Necesaria desde que el alta pública crea entregas en estado «Reservada»: sin esto, el staff
+ * sólo podría borrarlas y recrearlas, perdiendo el origen y el histórico.
+ */
+export const actualizarEntregaAction = async (
+  deliveryId: number,
+  changes: {
+    itemId?: number
+    sizeId?: number | null
+    quantity?: number
+    status?: (typeof DELIVERY_STATUSES)[number]['value']
+    payment?: (typeof DELIVERY_PAYMENTS)[number]['value']
+  },
+): Promise<StaffResult> => {
+  let payload
+  try {
+    payload = await requireStaff()
+  } catch {
+    return { ok: false, error: 'No autorizado.' }
+  }
+
+  const data: Record<string, unknown> = {}
+  if (changes.itemId) data.item = changes.itemId
+  if (changes.sizeId !== undefined) data.size = changes.sizeId
+  if (changes.quantity !== undefined) data.quantity = changes.quantity
+  if (changes.status) data.status = changes.status
+  if (changes.payment) data.payment = changes.payment
+  if (Object.keys(data).length === 0) return { ok: false, error: 'No hay nada que cambiar.' }
+
+  try {
+    await payload.update({
+      collection: 'equipment-deliveries',
+      id: deliveryId,
+      data,
+      overrideAccess: true,
+    })
+  } catch (err) {
+    if (isDuplicateIn(err, 'equipment-deliveries')) {
+      return { ok: false, error: 'Ya tiene otra prenda de ese tipo esta temporada.' }
+    }
+    payload.logger.error({ err, deliveryId }, 'actualizarEntregaAction failed')
+    return { ok: false, error: 'No se pudo actualizar la entrega.' }
+  }
+  return { ok: true, message: 'Entrega actualizada.' }
+}
+
+/** Siembra las tallas XS→4XL que falten. Idempotente: se puede pulsar las veces que haga falta. */
+export const sembrarTallasAction = async (): Promise<StaffResult> => {
+  let payload
+  try {
+    payload = await requireStaff()
+  } catch {
+    return { ok: false, error: 'No autorizado.' }
+  }
+  try {
+    const res = await ensureStandardSizes(payload)
+    return {
+      ok: true,
+      message: res.created.length
+        ? `Tallas creadas: ${res.created.join(', ')}.`
+        : 'Ya estaban todas las tallas estándar.',
+    }
+  } catch (err) {
+    payload.logger.error({ err }, 'sembrarTallasAction failed')
+    return { ok: false, error: 'No se pudieron crear las tallas.' }
+  }
+}
+
+/** Reconcilia todas las filas de stock recontando desde las entregas reales. */
+export const recalcularStockAction = async (): Promise<StaffResult> => {
+  let payload
+  try {
+    payload = await requireStaff()
+  } catch {
+    return { ok: false, error: 'No autorizado.' }
+  }
+  try {
+    const rows = await payload.find({
+      collection: 'equipment-stock',
+      depth: 0,
+      pagination: false,
+      overrideAccess: true,
+    })
+    for (const row of rows.docs) {
+      await recalcStock(payload, row.item, row.size, row.season)
+    }
+    return { ok: true, message: `Stock recalculado (${rows.docs.length} combinaciones).` }
+  } catch (err) {
+    payload.logger.error({ err }, 'recalcularStockAction failed')
+    return { ok: false, error: 'No se pudo recalcular el stock.' }
+  }
+}
+
+/** Fija cuántas unidades ha comprado el club de una combinación artículo/talla. */
+export const guardarStockAction = async (
+  itemId: number,
+  sizeId: number,
+  quantityTotal: number,
+): Promise<StaffResult> => {
+  let payload
+  try {
+    payload = await requireStaff()
+  } catch {
+    return { ok: false, error: 'No autorizado.' }
+  }
+  if (!Number.isFinite(quantityTotal) || quantityTotal < 0) {
+    return { ok: false, error: 'La cantidad debe ser 0 o más.' }
+  }
+  const season = await getCurrentSeason(payload)
+  if (!season) return { ok: false, error: 'Marca una temporada como actual primero.' }
+
+  try {
+    const existing = await payload.find({
+      collection: 'equipment-stock',
+      where: {
+        and: [
+          { item: { equals: itemId } },
+          { size: { equals: sizeId } },
+          { season: { equals: season.id } },
+        ],
+      },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+    if (existing.docs[0]) {
+      await payload.update({
+        collection: 'equipment-stock',
+        id: existing.docs[0].id,
+        data: { quantityTotal },
+        overrideAccess: true,
+      })
+    } else {
+      await payload.create({
+        collection: 'equipment-stock',
+        data: { item: itemId, size: sizeId, season: season.id, quantityTotal },
+        overrideAccess: true,
+      })
+    }
+    // El `beforeChange` de stock recalcula `quantityAvailable`, pero el recuento de entregas
+    // sólo se refresca recontando desde la fuente.
+    await recalcStock(payload, itemId, sizeId, season.id)
+  } catch (err) {
+    payload.logger.error({ err }, 'guardarStockAction failed')
+    return { ok: false, error: 'No se pudo guardar el stock.' }
+  }
+  return { ok: true, message: 'Stock actualizado.' }
 }
 
 /** Remove a delivery (e.g. a mistake); stock recalculates. */
@@ -180,16 +342,19 @@ export type ImportRow = {
   categoria: string
   marca: string
   posicion: string
+  distancia: string
   matchedMemberId: number | null
   matchedMemberName: string | null
   error: string | null
+  /** Aviso que NO bloquea la fila (p. ej. una marca que no se puede interpretar). */
+  warning: string | null
 }
 export type ImportResult = {
   ok: boolean
   error?: string
   dryRun: boolean
   rows: ImportRow[]
-  summary: { total: number; enlazados: number; sinEnlazar: number; errores: number; creados: number }
+  summary: { total: number; enlazados: number; sinEnlazar: number; errores: number; creados: number; sinMarcaValida: number }
 }
 
 const normalizeCategory = (raw: string): string | undefined => {
@@ -213,9 +378,9 @@ export const importResultsAction = async (
   try {
     payload = await requireStaff()
   } catch {
-    return { ok: false, error: 'No autorizado.', dryRun, rows: [], summary: { total: 0, enlazados: 0, sinEnlazar: 0, errores: 0, creados: 0 } }
+    return { ok: false, error: 'No autorizado.', dryRun, rows: [], summary: { total: 0, enlazados: 0, sinEnlazar: 0, errores: 0, creados: 0, sinMarcaValida: 0 } }
   }
-  if (!eventId) return { ok: false, error: 'Elige un evento.', dryRun, rows: [], summary: { total: 0, enlazados: 0, sinEnlazar: 0, errores: 0, creados: 0 } }
+  if (!eventId) return { ok: false, error: 'Elige un evento.', dryRun, rows: [], summary: { total: 0, enlazados: 0, sinEnlazar: 0, errores: 0, creados: 0, sinMarcaValida: 0 } }
 
   const { rows: rawRows } = parseCsv(csvText)
   const rows: ImportRow[] = []
@@ -231,9 +396,18 @@ export const importResultsAction = async (
       categoria: (r['categoria'] ?? r['categoría'] ?? '').trim(),
       marca: (r['marca'] ?? r['tiempo'] ?? '').trim(),
       posicion: (r['posicion'] ?? r['posición'] ?? r['pos'] ?? '').trim(),
+      // Columna nueva y opcional: sin ella el CSV de siempre sigue funcionando igual
+      // (la distancia se hereda del evento en el hook de `results`).
+      distancia: (r['distancia'] ?? r['distance'] ?? r['km'] ?? r['metros'] ?? '').trim(),
       matchedMemberId: null,
       matchedMemberName: null,
       error: null,
+      warning: null,
+    }
+
+    // Aviso, no error: una marca ilegible no debe impedir importar la fila.
+    if (row.marca && parseMarkToSeconds(row.marca) === null) {
+      row.warning = 'No se entiende la marca; se guardará sin normalizar.'
     }
 
     if (!nombre) {
@@ -267,6 +441,7 @@ export const importResultsAction = async (
             dorsal: row.dorsal ? Number(row.dorsal) : undefined,
             position: row.posicion ? Number(row.posicion) : undefined,
             mark: row.marca || undefined,
+            distanceMeters: parseDistanceToMeters(row.distancia) ?? undefined,
             category: normalizeCategory(row.categoria) as never,
           },
           overrideAccess: true,
@@ -286,8 +461,180 @@ export const importResultsAction = async (
     sinEnlazar: rows.filter((r) => !r.matchedMemberId && !r.error).length,
     errores: rows.filter((r) => r.error).length,
     creados,
+    sinMarcaValida: rows.filter((r) => r.warning).length,
   }
   return { ok: true, dryRun, rows, summary }
+}
+
+export type BackfillResult = {
+  ok: boolean
+  error?: string
+  dryRun: boolean
+  procesados: number
+  restantes: number
+  sinMarcaValida: number
+}
+
+const BACKFILL_BATCH = 200
+
+/**
+ * Normaliza los resultados creados antes de que existieran `markSeconds` y `distanceMeters`.
+ *
+ * Idempotente por construcción: sólo mira las filas sin normalizar, así que reejecutarla no
+ * toca nada ya hecho. Va por lotes con un botón "Continuar" para respetar el límite de
+ * duración de las Server Actions sin necesidad de un sistema de trabajos en segundo plano.
+ */
+export const backfillResultsAction = async (dryRun: boolean): Promise<BackfillResult> => {
+  let payload
+  try {
+    payload = await requireStaff()
+  } catch {
+    return { ok: false, error: 'No autorizado.', dryRun, procesados: 0, restantes: 0, sinMarcaValida: 0 }
+  }
+
+  const pending: Where = {
+    or: [{ markSeconds: { exists: false } }, { distanceMeters: { exists: false } }],
+  }
+
+  try {
+    const batch = await payload.find({
+      collection: 'results',
+      where: pending,
+      limit: BACKFILL_BATCH,
+      depth: 0,
+      overrideAccess: true,
+    })
+
+    const sinMarcaValida = batch.docs.filter(
+      (r) => r.mark && parseMarkToSeconds(r.mark) === null,
+    ).length
+
+    if (dryRun) {
+      return {
+        ok: true,
+        dryRun,
+        procesados: 0,
+        restantes: batch.totalDocs,
+        sinMarcaValida,
+      }
+    }
+
+    let procesados = 0
+    for (const doc of batch.docs) {
+      // El update dispara el `beforeChange` de `results`, que calcula ambas columnas.
+      await payload
+        .update({ collection: 'results', id: doc.id, data: {}, overrideAccess: true })
+        .then(() => {
+          procesados++
+        })
+        .catch((err) => payload.logger.error({ err, id: doc.id }, 'backfill row failed'))
+    }
+
+    const left = await payload.count({ collection: 'results', where: pending, overrideAccess: true })
+    return { ok: true, dryRun, procesados, restantes: left.totalDocs, sinMarcaValida }
+  } catch (err) {
+    payload.logger.error({ err }, 'backfillResultsAction failed')
+    return { ok: false, error: 'No se pudo completar la normalización.', dryRun, procesados: 0, restantes: 0, sinMarcaValida: 0 }
+  }
+}
+
+export type MembershipBackfillResult = {
+  ok: boolean
+  error?: string
+  dryRun: boolean
+  season: string | null
+  creadas: number
+  restantes: number
+}
+
+/**
+ * Abre la cuota pendiente de la temporada actual a los socios que no la tienen.
+ *
+ * Red de seguridad del alta pública: la cuota se crea en `after()`, fuera de la respuesta, así
+ * que un fallo transitorio de base de datos deja al socio dentro pero sin cuota. Esto lo repara
+ * sin tener que buscar a nadie a mano. Idempotente: sólo mira quién no la tiene.
+ */
+export const backfillMembershipsAction = async (
+  dryRun: boolean,
+): Promise<MembershipBackfillResult> => {
+  let payload
+  try {
+    payload = await requireStaff()
+  } catch {
+    return { ok: false, error: 'No autorizado.', dryRun, season: null, creadas: 0, restantes: 0 }
+  }
+
+  const season = await getCurrentSeason(payload)
+  if (!season) {
+    return {
+      ok: false,
+      error: 'Marca una temporada como actual primero.',
+      dryRun,
+      season: null,
+      creadas: 0,
+      restantes: 0,
+    }
+  }
+
+  try {
+    // Quién ya tiene cuota esta temporada. `depth: 0` y sin paginar: son ids, no fichas.
+    const existing = await payload.find({
+      collection: 'memberships',
+      where: { season: { equals: season.id } },
+      depth: 0,
+      pagination: false,
+      overrideAccess: true,
+    })
+    const withMembership = new Set(
+      existing.docs.map((m) => (typeof m.member === 'object' && m.member ? m.member.id : m.member)),
+    )
+
+    const members = await payload.find({
+      collection: 'members',
+      depth: 0,
+      pagination: false,
+      select: { name: true },
+      overrideAccess: true,
+    })
+    const missing = members.docs.filter((m) => !withMembership.has(m.id))
+
+    if (dryRun) {
+      return { ok: true, dryRun, season: season.name, creadas: 0, restantes: missing.length }
+    }
+
+    let creadas = 0
+    for (const member of missing.slice(0, BACKFILL_BATCH)) {
+      await payload
+        .create({
+          collection: 'memberships',
+          data: { member: member.id, season: season.id, paymentStatus: 'pending' },
+          overrideAccess: true,
+        })
+        .then(() => {
+          creadas++
+        })
+        .catch((err) =>
+          payload.logger.error({ err, memberId: member.id }, 'backfillMemberships row failed'),
+        )
+    }
+    return {
+      ok: true,
+      dryRun,
+      season: season.name,
+      creadas,
+      restantes: Math.max(0, missing.length - creadas),
+    }
+  } catch (err) {
+    payload.logger.error({ err }, 'backfillMembershipsAction failed')
+    return {
+      ok: false,
+      error: 'No se pudieron abrir las cuotas.',
+      dryRun,
+      season: season.name,
+      creadas: 0,
+      restantes: 0,
+    }
+  }
 }
 
 /** Save all custom-field values for a member in one go. */

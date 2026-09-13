@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { getCurrentStaff } from '@/actions/gestion'
+import { currentStaff } from '@/lib/session'
 import { getClient } from '@/lib/payload'
 import { MEMBER_CATEGORIES } from '@/collections/Members'
 import { formatAttributeValue, type AttributeType } from '@/lib/attributes'
@@ -16,7 +16,7 @@ const STATUS_LABEL: Record<string, string> = {
 const categoryLabel = (v?: string | null) => MEMBER_CATEGORIES.find((c) => c.value === v)?.label ?? ''
 
 export async function GET(): Promise<NextResponse> {
-  const staff = await getCurrentStaff()
+  const staff = await currentStaff()
   if (!staff) return new NextResponse('No autorizado', { status: 401 })
 
   const payload = await getClient()

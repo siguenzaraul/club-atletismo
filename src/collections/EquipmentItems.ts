@@ -10,7 +10,7 @@ export const EquipmentItems: CollectionConfig = {
   defaultSort: 'order',
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'sizeScale', 'active', 'order'],
+    defaultColumns: ['name', 'category', 'sizeScale', 'active', 'order'],
     group: 'Equipación',
     description: 'Camisetas, pantalones, sudaderas… Añade los artículos que quieras.',
   },
@@ -18,6 +18,17 @@ export const EquipmentItems: CollectionConfig = {
   fields: [
     { name: 'name', type: 'text', label: 'Nombre', required: true, admin: { description: 'Ej. Camiseta oficial, Pantalón corto' } },
     slugField('name'),
+    {
+      name: 'category',
+      type: 'relationship',
+      relationTo: 'equipment-categories',
+      label: 'Tipo de prenda',
+      // NO required: los artículos que ya existen en producción se quedan sin tipo y salen
+      // agrupados en «Otros». Un `required` aquí rompería sus guardados.
+      admin: {
+        description: 'Parte de arriba, parte de abajo… Los artículos sin tipo salen en «Otros».',
+      },
+    },
     {
       name: 'sizeScale',
       type: 'relationship',

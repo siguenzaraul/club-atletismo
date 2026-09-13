@@ -1,6 +1,14 @@
-import type { CheckboxFieldValidation, CollectionConfig, TextFieldValidation } from 'payload'
+import type {
+  CheckboxFieldValidation,
+  CollectionBeforeChangeHook,
+  CollectionConfig,
+  TextFieldValidation,
+} from 'payload'
 
 import { anyone, isAdmin, isAdminOrEditorFieldLevel, adminOrOwn } from '../access'
+import { MEMBER_TOKEN_EXPIRATION } from '../lib/auth-config'
+import { parseMarkToSeconds } from '../lib/marks'
+import { slugify } from '../lib/slugify'
 
 export const MEMBER_CATEGORIES = [
   { label: 'Sub-18', value: 'sub18' },
@@ -28,6 +36,59 @@ const validateImageRights: CheckboxFieldValidation = (value, { operation, previo
   return true
 }
 
+/** Sella la fecha la primera vez que se aceptan los derechos de imagen. */
+const sealImageRightsAcceptedAt: CollectionBeforeChangeHook = ({ data }) => {
+  if (data.imageRightsAccepted === true && !data.imageRightsAcceptedAt) {
+    return { ...data, imageRightsAcceptedAt: new Date().toISOString() }
+  }
+  return data
+}
+
+/** Normaliza a segundos las marcas introducidas a mano, para poder compararlas. */
+const computePersonalBestSeconds: CollectionBeforeChangeHook = ({ data }) => {
+  if (!Array.isArray(data.personalBests)) return data
+  return {
+    ...data,
+    personalBests: data.personalBests.map((row: { mark?: string | null }) => ({
+      ...row,
+      markSeconds: parseMarkToSeconds(row?.mark),
+    })),
+  }
+}
+
+/**
+ * Asigna el slug público sólo al publicar la ficha, nunca de forma masiva.
+ *
+ * Deliberadamente NO se usa `slugField('name')`: su `beforeValidate` generaría slug para todos
+ * los socios en su siguiente guardado y dos homónimos reventarían el índice único con un 500
+ * en /socios/perfil. El índice único queda sólo como red de seguridad ante una carrera.
+ */
+const assignPublicSlug: CollectionBeforeChangeHook = async ({ data, originalDoc, req }) => {
+  const publish = data.publicProfile ?? originalDoc?.publicProfile
+  if (publish !== true) return data
+  if (data.slug || originalDoc?.slug) return data
+
+  const base = slugify(String(data.name ?? originalDoc?.name ?? '')) || 'atleta'
+  let candidate = base
+
+  for (let i = 2; i <= 50; i++) {
+    const clash = await req.payload
+      .find({
+        collection: 'members',
+        where: { slug: { equals: candidate } },
+        limit: 1,
+        depth: 0,
+        req,
+        overrideAccess: true,
+      })
+      .catch(() => null)
+    if (!clash || clash.totalDocs === 0) break
+    candidate = `${base}-${i}`
+  }
+
+  return { ...data, slug: candidate }
+}
+
 /** Socios. A separate auth collection so members can log into the public members area. */
 export const Members: CollectionConfig = {
   slug: 'members',
@@ -38,7 +99,10 @@ export const Members: CollectionConfig = {
     listSearchableFields: ['name', 'email', 'federationNumber'],
     group: 'Club',
   },
-  auth: true,
+  // `tokenExpiration` explícito: el default de Payload son 2 h y la cookie de sesión dura 7
+  // días. Cuando divergían, el socio volvía con cookie válida y token caducado y acababa en
+  // /login sin motivo aparente. Ver src/lib/auth-config.ts.
+  auth: { tokenExpiration: MEMBER_TOKEN_EXPIRATION },
   access: {
     // Public self-registration; reads/updates limited to staff or the member themselves.
     create: anyone,
@@ -157,6 +221,85 @@ export const Members: CollectionConfig = {
           ],
         },
         {
+          label: 'Perfil público',
+          description:
+            'Desactivado por defecto. Sólo se publica lo que aparece en esta pestaña: el email, el teléfono y el nº de federación no se publican nunca.',
+          fields: [
+            {
+              name: 'publicProfile',
+              type: 'checkbox',
+              label: 'Publicar mi ficha de atleta',
+              defaultValue: false,
+              admin: {
+                description:
+                  'Si lo activas, tu nombre, foto, categoría y marcas serán visibles en /atletas.',
+              },
+            },
+            {
+              name: 'slug',
+              type: 'text',
+              label: 'URL pública',
+              unique: true,
+              index: true,
+              admin: {
+                readOnly: true,
+                description: 'Se genera al publicar la ficha por primera vez y ya no cambia.',
+              },
+            },
+            {
+              name: 'publicBio',
+              type: 'textarea',
+              label: 'Sobre mí',
+              maxLength: 500,
+              admin: { description: 'Máximo 500 caracteres. Se muestra en tu ficha pública.' },
+            },
+            {
+              name: 'personalBests',
+              type: 'array',
+              label: 'Marcas personales',
+              labels: { singular: 'Marca', plural: 'Marcas' },
+              admin: {
+                description:
+                  'Para carreras ajenas al club. Las de nuestras pruebas se calculan solas a partir de los resultados.',
+              },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'distanceMeters',
+                      type: 'number',
+                      label: 'Distancia (m)',
+                      required: true,
+                      min: 1,
+                      admin: { width: '40%', description: '5000, 10000, 21097, 42195…' },
+                    },
+                    {
+                      name: 'mark',
+                      type: 'text',
+                      label: 'Marca',
+                      required: true,
+                      admin: { width: '30%', placeholder: '00:42:15' },
+                    },
+                    {
+                      name: 'date',
+                      type: 'date',
+                      label: 'Fecha',
+                      admin: { width: '30%' },
+                    },
+                  ],
+                },
+                { name: 'eventName', type: 'text', label: 'Carrera' },
+                {
+                  name: 'markSeconds',
+                  type: 'number',
+                  admin: { hidden: true, readOnly: true },
+                },
+              ],
+            },
+          ],
+        },
+        {
           label: 'Personalizados',
           description: 'Campos a medida definidos por el club en Configuración → Campos del socio.',
           fields: [
@@ -173,13 +316,6 @@ export const Members: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeChange: [
-      ({ data }) => {
-        if (data.imageRightsAccepted === true && !data.imageRightsAcceptedAt) {
-          return { ...data, imageRightsAcceptedAt: new Date().toISOString() }
-        }
-        return data
-      },
-    ],
+    beforeChange: [sealImageRightsAcceptedAt, computePersonalBestSeconds, assignPublicSlug],
   },
 }

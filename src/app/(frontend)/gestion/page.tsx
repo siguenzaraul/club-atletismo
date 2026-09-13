@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { UploadIcon, DownloadIcon } from 'lucide-react'
 
-import { getCurrentStaff } from '@/actions/gestion'
+import { currentStaff } from '@/lib/session'
 import { getClient } from '@/lib/payload'
 import { MEMBER_CATEGORIES } from '@/collections/Members'
 import { PageHeader } from '@/components/ui/page-header'
@@ -11,14 +11,14 @@ import { Button } from '@/components/ui/button'
 import { MembersTable, type MemberRow } from '@/components/gestion/MembersTable'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Gestión de socios | ABTR' }
+export const metadata = { title: 'Gestión de socios' }
 
 const categoryLabel = (v?: string | null) => MEMBER_CATEGORIES.find((c) => c.value === v)?.label ?? '—'
 const toStatus = (v?: string | null): MemberRow['status'] =>
   v === 'active' ? 'active' : v === 'inactive' ? 'inactive' : 'pending'
 
 export default async function GestionListPage() {
-  const staff = await getCurrentStaff()
+  const staff = await currentStaff()
   if (!staff) redirect('/admin/login?redirect=/gestion')
 
   const payload = await getClient()

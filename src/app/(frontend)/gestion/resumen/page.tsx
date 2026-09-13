@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ListChecksIcon } from 'lucide-react'
 
-import { getCurrentStaff } from '@/actions/gestion'
+import { currentStaff } from '@/lib/session'
 import { getClient } from '@/lib/payload'
 import { getSelectFieldSummaries } from '@/lib/attributes'
 import { PageHeader } from '@/components/ui/page-header'
@@ -12,10 +12,10 @@ import { Button } from '@/components/ui/button'
 import { SelectFieldSummaryCard } from '@/components/gestion/SelectFieldSummaryCard'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Resumen del club | ABTR' }
+export const metadata = { title: 'Resumen del club' }
 
 export default async function ResumenPage() {
-  const staff = await getCurrentStaff()
+  const staff = await currentStaff()
   if (!staff) redirect('/admin/login?redirect=/gestion/resumen')
 
   const payload = await getClient()

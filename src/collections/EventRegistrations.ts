@@ -1,10 +1,59 @@
-import type { Access, CollectionConfig } from 'payload'
+import type { Access, CollectionAfterChangeHook, CollectionConfig } from 'payload'
 
 import { isAdminOrEditor, isAdminOrEditorFieldLevel, adminOrOwn } from '../access'
+import {
+  getEmailFooter,
+  registrationConfirmedEmail,
+  sendEmailAfterResponse,
+} from '../lib/email'
 import { MEMBER_CATEGORIES } from './Members'
 
 // Any authenticated user (staff or member) may register; members get linked automatically.
 const canCreate: Access = ({ req: { user } }) => Boolean(user)
+
+/**
+ * Correo de confirmación de inscripción.
+ *
+ * Va en un hook y no en la server action porque las inscripciones se crean desde TRES sitios:
+ * `inscribeAction`, `registerAction` (alta con ?evento=) y el panel de administración. El hook
+ * es el punto de estrangulamiento único, imposible de olvidar al añadir un cuarto camino.
+ */
+const sendRegistrationEmail: CollectionAfterChangeHook = async ({ doc, req, operation, context }) => {
+  if (operation !== 'create') return
+  if (context?.skipRegistrationEmail) return
+
+  const payload = req.payload
+  try {
+    const memberId = doc.member && typeof doc.member === 'object' ? doc.member.id : doc.member
+    const eventId = doc.event && typeof doc.event === 'object' ? doc.event.id : doc.event
+    if (!memberId || !eventId) return
+
+    const [member, event, footer] = await Promise.all([
+      payload.findByID({ collection: 'members', id: memberId, depth: 0, req, overrideAccess: true }),
+      payload.findByID({ collection: 'events', id: eventId, depth: 0, req, overrideAccess: true }),
+      // `req` también aquí: este hook corre dentro de la transacción del create.
+      getEmailFooter(payload, req),
+    ])
+    if (!member?.email || !event) return
+
+    const content = registrationConfirmedEmail({
+      name: member.name,
+      eventTitle: event.title,
+      eventDate: event.date,
+      eventLocation: event.location,
+      eventSlug: event.slug,
+      footer,
+    })
+    await sendEmailAfterResponse(payload, {
+      to: member.email,
+      replyTo: footer.email ?? undefined,
+      ...content,
+    })
+  } catch (err) {
+    // Un fallo aquí nunca puede tumbar la inscripción.
+    payload.logger.error({ err }, 'sendRegistrationEmail failed')
+  }
+}
 
 export const EventRegistrations: CollectionConfig = {
   slug: 'event-registrations',
@@ -32,6 +81,7 @@ export const EventRegistrations: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [sendRegistrationEmail],
   },
   fields: [
     {

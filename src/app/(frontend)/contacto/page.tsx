@@ -5,7 +5,7 @@ import { BrandPattern } from '@/components/BrandPattern'
 
 export const dynamic = 'force-dynamic'
 export const metadata = {
-  title: 'Contacto | ABTR',
+  title: 'Contacto',
   description: 'Ponte en contacto con el Club de Running Albatera.',
 }
 
@@ -15,7 +15,7 @@ export default async function ContactPage() {
 
   return (
     <main>
-      <section className="bg-abtr-black py-16 text-white">
+      <section className="band-ink py-16">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6">
           <div>
             <h1 className="font-display text-4xl uppercase tracking-tight sm:text-5xl">Hablamos</h1>
@@ -32,25 +32,25 @@ export default async function ContactPage() {
       <section className="mx-auto grid max-w-6xl gap-12 px-6 py-16 md:grid-cols-[1fr_1.2fr]">
         <div className="flex flex-col gap-4">
           {settings.email && (
-            <a href={`mailto:${settings.email}`} className="rounded-2xl border border-abtr-ink/10 p-4 hover:border-abtr-blue">
-              <p className="text-sm text-abtr-ink/60">Email</p>
+            <a href={`mailto:${settings.email}`} className="rounded-2xl border border-border p-4 hover:border-abtr-blue">
+              <p className="text-sm text-muted-foreground">Email</p>
               <p className="font-semibold">{settings.email}</p>
             </a>
           )}
           {settings.phone && (
-            <a href={`tel:${settings.phone.replace(/\s/g, '')}`} className="rounded-2xl border border-abtr-ink/10 p-4 hover:border-abtr-blue">
-              <p className="text-sm text-abtr-ink/60">Teléfono</p>
+            <a href={`tel:${settings.phone.replace(/\s/g, '')}`} className="rounded-2xl border border-border p-4 hover:border-abtr-blue">
+              <p className="text-sm text-muted-foreground">Teléfono</p>
               <p className="font-semibold">{settings.phone}</p>
             </a>
           )}
           {settings.address && (
-            <div className="rounded-2xl border border-abtr-ink/10 p-4">
-              <p className="text-sm text-abtr-ink/60">Dirección</p>
+            <div className="rounded-2xl border border-border p-4">
+              <p className="text-sm text-muted-foreground">Dirección</p>
               <p className="font-semibold">{settings.address}</p>
             </div>
           )}
         </div>
-        <div className="rounded-2xl border border-abtr-ink/10 p-6 sm:p-8">
+        <div className="rounded-2xl border border-border p-6 sm:p-8">
           <ContactForm />
         </div>
       </section>

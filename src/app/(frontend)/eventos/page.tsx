@@ -6,6 +6,14 @@ import { seriesLabel } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = {
+  title: 'Eventos',
+  description:
+    'Carreras propias, Social Runs, eventos de club y pruebas externas del Club de Running Albatera.',
+  // Los filtros van por querystring: sin canonical, cada combinación es contenido duplicado.
+  alternates: { canonical: '/eventos' },
+}
+
 const FILTERS = [
   { value: '', label: 'Todos' },
   { value: 'carrera-principal', label: 'Carrera' },
@@ -32,7 +40,7 @@ export default async function EventsPage({
   return (
     <main className="mx-auto max-w-6xl px-6 py-16">
       <h1 className="font-display text-4xl uppercase tracking-tight sm:text-5xl">Eventos</h1>
-      <p className="mt-3 max-w-xl text-abtr-ink/60">
+      <p className="mt-3 max-w-xl text-muted-foreground">
         Carreras propias, Social Runs, eventos de club y pruebas externas a las que vamos juntos.{' '}
         {serie && `Filtrando: ${seriesLabel(serie)}.`}
       </p>
@@ -45,7 +53,7 @@ export default async function EventsPage({
               key={f.value}
               href={f.value ? `/eventos?serie=${f.value}` : '/eventos'}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                active ? 'bg-abtr-black text-white' : 'bg-abtr-ink/5 text-abtr-ink/70 hover:bg-abtr-ink/10'
+                active ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               }`}
             >
               {f.label}
@@ -61,7 +69,7 @@ export default async function EventsPage({
           ))}
         </div>
       ) : (
-        <p className="mt-10 text-abtr-ink/60">No hay eventos para este filtro.</p>
+        <p className="mt-10 text-muted-foreground">No hay eventos para este filtro.</p>
       )}
     </main>
   )
