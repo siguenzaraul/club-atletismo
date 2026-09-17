@@ -88,7 +88,6 @@ export interface Config {
     'equipment-items': EquipmentItem;
     'equipment-stock': EquipmentStock;
     'equipment-deliveries': EquipmentDelivery;
-    'equipment-packs': EquipmentPack;
     'contact-messages': ContactMessage;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -131,7 +130,6 @@ export interface Config {
     'equipment-items': EquipmentItemsSelect<false> | EquipmentItemsSelect<true>;
     'equipment-stock': EquipmentStockSelect<false> | EquipmentStockSelect<true>;
     'equipment-deliveries': EquipmentDeliveriesSelect<false> | EquipmentDeliveriesSelect<true>;
-    'equipment-packs': EquipmentPacksSelect<false> | EquipmentPacksSelect<true>;
     'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -814,34 +812,6 @@ export interface EquipmentStock {
   createdAt: string;
 }
 /**
- * La equipación que le corresponde a un socio según su tipo y temporada.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "equipment-packs".
- */
-export interface EquipmentPack {
-  id: number;
-  /**
-   * Ej. Pack adulto 2025/2026
-   */
-  name: string;
-  season: number | Season;
-  /**
-   * Si lo desmarcas, elige a qué tipos de socio aplica.
-   */
-  appliesToAll?: boolean | null;
-  membershipTypes?: (number | MembershipType)[] | null;
-  lines?:
-    | {
-        item: number | EquipmentItem;
-        quantity?: number | null;
-        id?: string | null;
-      }[]
-    | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "contact-messages".
  */
@@ -958,10 +928,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'equipment-deliveries';
         value: number | EquipmentDelivery;
-      } | null)
-    | ({
-        relationTo: 'equipment-packs';
-        value: number | EquipmentPack;
       } | null)
     | ({
         relationTo: 'contact-messages';
@@ -1378,25 +1344,6 @@ export interface EquipmentDeliveriesSelect<T extends boolean = true> {
   category?: T;
   slotKey?: T;
   source?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "equipment-packs_select".
- */
-export interface EquipmentPacksSelect<T extends boolean = true> {
-  name?: T;
-  season?: T;
-  appliesToAll?: T;
-  membershipTypes?: T;
-  lines?:
-    | T
-    | {
-        item?: T;
-        quantity?: T;
-        id?: T;
-      };
   updatedAt?: T;
   createdAt?: T;
 }

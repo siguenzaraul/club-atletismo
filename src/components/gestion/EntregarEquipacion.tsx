@@ -38,7 +38,6 @@ type Delivery = {
   categoryId: number | null
   source: string | null
 }
-type PendingItem = { itemId: number; itemName: string }
 
 /** Derivado de la colección: un estado nuevo ya no puede aparecer en crudo en la pantalla. */
 const STATUS_LABEL: Record<string, string> = Object.fromEntries(
@@ -61,7 +60,8 @@ export function EntregarEquipacion({
   items: Item[]
   sizes: Size[]
   deliveries: Delivery[]
-  pending: PendingItem[]
+  /** Lo que el socio eligió y aún no se ha llevado, ya descrito («Camiseta · talla M»). */
+  pending: string[]
 }) {
   const [categoryId, setCategoryId] = useState('')
   const [itemId, setItemId] = useState('')
@@ -125,11 +125,11 @@ export function EntregarEquipacion({
     <div className="flex flex-col gap-5">
       {pendingItems.length > 0 && (
         <div className="rounded-xl border border-abtr-yellow/50 bg-abtr-yellow/15 p-4">
-          <p className="text-sm font-semibold text-foreground">Le falta por recoger esta temporada:</p>
+          <p className="text-sm font-semibold text-foreground">Pendiente de entregarle:</p>
           <ul className="mt-2 flex flex-wrap gap-2">
-            {pendingItems.map((p) => (
-              <li key={p.itemId}>
-                <StatusBadge tone="warning">{p.itemName}</StatusBadge>
+            {pendingItems.map((label) => (
+              <li key={label}>
+                <StatusBadge tone="warning">{label}</StatusBadge>
               </li>
             ))}
           </ul>

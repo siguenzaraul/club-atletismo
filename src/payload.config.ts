@@ -28,7 +28,6 @@ import { EquipmentCategories } from './collections/EquipmentCategories'
 import { EquipmentItems } from './collections/EquipmentItems'
 import { EquipmentStock } from './collections/EquipmentStock'
 import { EquipmentDeliveries } from './collections/EquipmentDeliveries'
-import { EquipmentPacks } from './collections/EquipmentPacks'
 import { ContactMessages } from './collections/ContactMessages'
 import { SiteSettings } from './globals/SiteSettings'
 import { HomePage } from './globals/HomePage'
@@ -132,7 +131,6 @@ export default buildConfig({
     EquipmentItems,
     EquipmentStock,
     EquipmentDeliveries,
-    EquipmentPacks,
     ContactMessages,
   ],
   globals: [HomePage, SiteSettings, RegistrationForm],

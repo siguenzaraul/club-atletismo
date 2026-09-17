@@ -53,7 +53,6 @@ export const Seasons: CollectionConfig = {
             { collection: 'memberships', field: 'season', label: 'cuotas' },
             { collection: 'equipment-deliveries', field: 'season', label: 'entregas de equipación' },
             { collection: 'equipment-stock', field: 'season', label: 'filas de stock' },
-            { collection: 'equipment-packs', field: 'season', label: 'packs de equipación' },
           ],
           'Si de verdad quieres borrarla, vacía antes esos datos.',
         )

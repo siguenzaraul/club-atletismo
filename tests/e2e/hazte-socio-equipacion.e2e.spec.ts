@@ -84,8 +84,14 @@ test.describe('Alta con equipación', () => {
 
     const fieldset = page.locator('fieldset', { hasText: 'Tu equipación' })
     const firstBlock = fieldset.locator('> div').first()
-    await firstBlock.locator('select').first().selectOption({ index: 1 })
-    await firstBlock.getByLabel('Talla').selectOption({ index: 1 })
+    const garmentSelect = firstBlock.locator('select').first()
+    const sizeSelect = firstBlock.getByLabel('Talla')
+    await garmentSelect.selectOption({ index: 1 })
+    await sizeSelect.selectOption({ index: 1 })
+
+    // Lo elegido, para comprobar después que es exactamente lo que se le reserva.
+    const prenda = await garmentSelect.locator('option:checked').innerText()
+    const talla = await sizeSelect.locator('option:checked').innerText()
 
     await page.getByRole('button', { name: 'Crear cuenta' }).click()
     await expect(page).toHaveURL(/\/socios/)
@@ -96,5 +102,17 @@ test.describe('Alta con equipación', () => {
       await expect(page.getByRole('heading', { name: 'Mi equipación' })).toBeVisible()
       await expect(page.locator('text=Reservada').first()).toBeVisible()
     }).toPass({ timeout: 15_000 })
+
+    /**
+     * Lo que el socio eligió en el alta es lo que le falta por recoger, con su talla.
+     *
+     * Antes este aviso salía de los «packs de equipación», una lista aparte de lo que le tocaba
+     * a cada tipo de socio: decía «te falta la prenda de arriba» mientras el socio tenía dos
+     * prendas reservadas. Ahora la única fuente es lo que él eligió.
+     */
+    const panel = page.locator('section', { hasText: 'Mi equipación' }).last()
+    const pendiente = panel.locator('text=Te falta por recoger esta temporada').locator('..')
+    await expect(pendiente).toContainText(prenda.trim())
+    await expect(pendiente).toContainText(talla.trim())
   })
 })

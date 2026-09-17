@@ -6,6 +6,8 @@ import { currentStaff } from '@/lib/session'
 import { getClient } from '@/lib/payload'
 import { getCurrentSeason } from '@/lib/membership'
 import { attributeInputValue, valueFieldFor, type AttributeType } from '@/lib/attributes'
+import { describeGarment, summarizeMemberEquipment } from '@/lib/equipment-status'
+import { getRegistrationSettings } from '@/lib/registration-form'
 import { formatDate } from '@/lib/format'
 import { MEMBER_CATEGORIES } from '@/collections/Members'
 import { DatosForm } from '@/components/gestion/DatosForm'
@@ -56,7 +58,7 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
     attrsRes,
     regsRes,
     resultsRes,
-    packsRes,
+    registrationSettings,
   ] =
     await Promise.all([
       season
@@ -81,9 +83,8 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
       payload.find({ collection: 'member-attributes', where: { member: { equals: memberId } }, limit: 200, overrideAccess: true }),
       payload.find({ collection: 'event-registrations', where: { member: { equals: memberId } }, depth: 1, limit: 100, overrideAccess: true }),
       payload.find({ collection: 'results', where: { member: { equals: memberId } }, depth: 1, limit: 100, overrideAccess: true }),
-      season
-        ? payload.find({ collection: 'equipment-packs', where: { season: { equals: season.id } }, depth: 1, limit: 100, overrideAccess: true })
-        : Promise.resolve({ docs: [] as { appliesToAll?: boolean | null; membershipTypes?: unknown[]; lines?: { item?: unknown }[] }[] }),
+      // Los tipos de prenda que el club pregunta en el alta: la lista de lo que «toca».
+      getRegistrationSettings(payload),
     ])
 
   const membership = membershipRes.docs[0]
@@ -118,31 +119,26 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
     categoryId: idOf(d.category),
     source: d.source ?? null,
   }))
-  const deliveredItemIds = new Set(deliveriesRes.docs.map((d) => idOf(d.item)).filter(Boolean))
-  // También por tipo de prenda: un pack que pide «Camiseta oficial» queda cubierto si el socio
-  // se llevó «Camiseta de tirantes». Comparando sólo por artículo daría un falso pendiente.
-  const deliveredCategoryIds = new Set(
-    deliveriesRes.docs.map((d) => idOf(d.category)).filter(Boolean),
+  // Lo pendiente es lo que el socio eligió y aún no se ha llevado. La lista de lo que «toca»
+  // son los tipos de prenda del formulario de alta, no un catálogo aparte.
+  const equipment = summarizeMemberEquipment(
+    deliveriesRes.docs.map((d) => ({
+      id: d.id,
+      itemName: typeof d.item === 'object' && d.item ? (d.item.name ?? 'Artículo') : 'Artículo',
+      sizeLabel: typeof d.size === 'object' && d.size ? (d.size.label ?? null) : null,
+      status: d.status ?? null,
+      categoryId: idOf(d.category),
+    })),
+    registrationSettings.garments.map((g) => ({
+      categoryId: g.categoryId,
+      label: g.label,
+      required: g.required,
+    })),
   )
-  const itemCategoryById = new Map(items.docs.map((i) => [i.id, idOf(i.category)]))
-  const pending: { itemId: number; itemName: string }[] = []
-  for (const pack of packsRes.docs) {
-    const applies =
-      pack.appliesToAll ||
-      (Array.isArray(pack.membershipTypes) && pack.membershipTypes.some((t) => idOf(t) === currentTypeId))
-    if (!applies) continue
-    for (const line of pack.lines ?? []) {
-      const itemId = idOf(line.item)
-      const itemName = typeof line.item === 'object' && line.item ? (line.item as { name?: string }).name : null
-      if (!itemId || !itemName) continue
-      const categoryId = itemCategoryById.get(itemId) ?? null
-      const covered =
-        deliveredItemIds.has(itemId) || (categoryId != null && deliveredCategoryIds.has(categoryId))
-      if (!covered && !pending.some((p) => p.itemId === itemId)) {
-        pending.push({ itemId, itemName })
-      }
-    }
-  }
+  const pending = [
+    ...equipment.pendingPickup.map(describeGarment),
+    ...equipment.missingChoices.map((label) => `${label}: sin elegir`),
+  ]
 
   const statusMeta =
     member.membershipStatus === 'active'

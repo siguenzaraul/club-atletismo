@@ -183,7 +183,7 @@ const seed = async (): Promise<void> => {
       order: 1,
     },
   })
-  const pantalon = await payload.create({
+  await payload.create({
     collection: 'equipment-items',
     data: {
       name: 'Pantalón corto',
@@ -220,20 +220,6 @@ const seed = async (): Promise<void> => {
   await payload.create({
     collection: 'equipment-stock',
     data: { item: camiseta.id, size: tallas['M'], season: season.id, quantityTotal: 20 },
-  })
-
-  // Pack de la temporada: qué le corresponde a cada socio
-  await payload.create({
-    collection: 'equipment-packs',
-    data: {
-      name: 'Pack adulto 2025/2026',
-      season: season.id,
-      appliesToAll: true,
-      lines: [
-        { item: camiseta.id, quantity: 1 },
-        { item: pantalon.id, quantity: 1 },
-      ],
-    },
   })
 
   // Campos a medida de ejemplo (el club puede crear los que quiera)

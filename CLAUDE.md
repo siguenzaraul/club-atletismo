@@ -88,7 +88,22 @@ Añadir un valor a `MEMBER_CATEGORIES`, `EVENT_SERIES`, `CONTACT_SUBJECTS`… ex
 **No los toques.** Para taxonomías que crecen, usa un valor canónico numérico o de texto libre
 con un catálogo en TypeScript — como se hizo con las distancias (`src/lib/distances.ts`).
 
-### 8. `collections/Members.ts` llega al bundle del navegador
+### 8. La equipación tiene UNA fuente, y no son los packs
+
+Qué prendas se piden → **`registration-form` → `garments`** (los tipos de prenda del alta).
+Qué tiene cada socio → **`equipment-deliveries`**. El stock se deriva de ahí solo.
+
+Los «packs de equipación» eran una tercera lista (qué le tocaba a cada tipo de socio) y comparar
+ese catálogo teórico contra lo entregado daba avisos falsos: «te falta la prenda de arriba»
+mientras el socio tenía dos reservadas. Se eliminaron. Si vuelve a hacer falta un cálculo de
+«qué le falta», sale de `summarizeMemberEquipment` (`src/lib/equipment-status.ts`), que es puro y
+está cubierto por tests.
+
+**Las tablas `equipment_packs*` siguen en la base de datos** hasta la migración que las tira: el
+código ya no las lee. Si `migrate:create` te saca un `DROP TABLE "equipment_packs…"`, es esto y
+es correcto; cualquier otro `DROP` no lo es.
+
+### 9. `collections/Members.ts` llega al bundle del navegador
 
 `ProfileForm` y `DatosForm` (ambos `'use client'`) importan `MEMBER_CATEGORIES` de
 `collections/Members.ts`. Eso arrastra al cliente **todo lo que ese fichero importe como valor**.
@@ -103,7 +118,7 @@ componente culpable.
 aplica a `ContactMessages.ts` y `EquipmentDeliveries.ts`, que también los importan componentes de
 cliente.
 
-### 9. Borrar un documento referenciado revienta contra la BD
+### 10. Borrar un documento referenciado revienta contra la BD
 
 Payload declara las claves ajenas como `ON DELETE SET NULL`, pero las columnas de los campos
 `required` son `NOT NULL`. Resultado: borrar un socio con cuota, un tipo de prenda que pregunta el
@@ -115,10 +130,9 @@ significa nada sin él, o **parar** con un mensaje que diga qué hay dentro. Si 
 `required` nueva, añade también su regla, o acabas de romper el borrado del padre.
 `tests/int/borrados.int.spec.ts` los cubre.
 
-**Ojo con las filas de `array`**, que es donde más fácil se escapa: una línea de pack
-(`equipment_packs_lines.item_id`) o una fila del formulario de alta
-(`registration_form_garments.category_id`) bloquean igual que una colección entera, y no se ven
-en el listado de relaciones. Para esas están `removeFromCollectionArray` y `removeFromGlobalArray`.
+**Ojo con las filas de `array`**, que es donde más fácil se escapa: una fila del formulario de
+alta (`registration_form_garments.category_id`) bloquea igual que una colección entera, y no se
+ve en el listado de relaciones. Para eso está `removeFromGlobalArray`.
 
 ---
 

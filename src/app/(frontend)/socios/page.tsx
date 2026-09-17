@@ -11,6 +11,8 @@ import { CancelRegistrationButton } from '@/components/site/CancelRegistrationBu
 import { EventCompanions } from '@/components/site/EventCompanions'
 import { PagoCuotaPanel } from '@/components/site/PagoCuotaPanel'
 import { getMemberPaymentPanelData } from '@/lib/payment-report'
+import { describeGarment, summarizeMemberEquipment } from '@/lib/equipment-status'
+import { getRegistrationSettings } from '@/lib/registration-form'
 import { formatDate, formatDateTime } from '@/lib/format'
 import { MEMBER_CATEGORIES } from '@/collections/Members'
 import { getMemberVisibleAttributes } from '@/lib/attributes'
@@ -60,17 +62,26 @@ export default async function MembersAreaPage({
   const season = await getCurrentSeason(payload)
   const customAttributes = await getMemberVisibleAttributes(payload, member.id)
 
-  const [registrations, results, openEvents, deliveries, membershipRes, packsRes] = await Promise.all([
+  const [registrations, results, openEvents, deliveries, membershipRes, registrationSettings] = await Promise.all([
     payload.find({ collection: 'event-registrations', where: { member: { equals: member.id } }, depth: 1, limit: 100, overrideAccess: true }),
     payload.find({ collection: 'results', where: { member: { equals: member.id } }, depth: 1, limit: 100, overrideAccess: true }),
     payload.find({ collection: 'events', where: { registrationOpen: { equals: true } }, sort: 'date', limit: 100 }),
-    payload.find({ collection: 'equipment-deliveries', where: { member: { equals: member.id } }, depth: 1, limit: 100, overrideAccess: true }),
+    // Sólo las de la temporada actual: la equipación de temporadas pasadas ya está cerrada y
+    // mezclarla con la de ahora es lo que hacía que el aviso de «te falta» no cuadrara.
+    payload.find({
+      collection: 'equipment-deliveries',
+      where: season
+        ? { and: [{ member: { equals: member.id } }, { season: { equals: season.id } }] }
+        : { member: { equals: member.id } },
+      depth: 1,
+      limit: 100,
+      overrideAccess: true,
+    }),
     season
       ? payload.find({ collection: 'memberships', where: { and: [{ member: { equals: member.id } }, { season: { equals: season.id } }] }, depth: 1, limit: 1, overrideAccess: true })
       : Promise.resolve({ docs: [] as { type?: unknown; paymentReportedAt?: string | null }[] }),
-    season
-      ? payload.find({ collection: 'equipment-packs', where: { season: { equals: season.id } }, depth: 1, limit: 100, overrideAccess: true })
-      : Promise.resolve({ docs: [] as { appliesToAll?: boolean | null; membershipTypes?: unknown[]; lines?: { item?: unknown }[] }[] }),
+    // Los tipos de prenda que el club pregunta en el alta: la única lista de lo que «toca».
+    getRegistrationSettings(payload),
   ])
 
   // Acompañantes de los eventos abiertos. Una sola consulta para todos: antes iba una por
@@ -134,20 +145,21 @@ export default async function MembersAreaPage({
     membershipTypeId: currentTypeId,
   })
 
-  const deliveredItemIds = new Set(deliveries.docs.map((d) => idOf(d.item)).filter(Boolean))
-  const pendingEquipment: string[] = []
-  for (const pack of packsRes.docs) {
-    const applies =
-      pack.appliesToAll || (Array.isArray(pack.membershipTypes) && pack.membershipTypes.some((t) => idOf(t) === currentTypeId))
-    if (!applies) continue
-    for (const line of pack.lines ?? []) {
-      const itemId = idOf(line.item)
-      const itemName = typeof line.item === 'object' && line.item ? (line.item as { name?: string }).name : null
-      if (itemId && itemName && !deliveredItemIds.has(itemId) && !pendingEquipment.includes(itemName)) {
-        pendingEquipment.push(itemName)
-      }
-    }
-  }
+  // Lo que le falta por recoger son SUS prendas sin entregar, no un catálogo teórico.
+  const equipment = summarizeMemberEquipment(
+    deliveries.docs.map((d) => ({
+      id: d.id,
+      itemName: typeof d.item === 'object' && d.item ? (d.item.name ?? 'Artículo') : 'Artículo',
+      sizeLabel: typeof d.size === 'object' && d.size ? (d.size.label ?? null) : null,
+      status: d.status ?? null,
+      categoryId: idOf(d.category),
+    })),
+    registrationSettings.garments.map((g) => ({
+      categoryId: g.categoryId,
+      label: g.label,
+      required: g.required,
+    })),
+  )
 
   const registeredEventIds = new Set(registrations.docs.map((r) => idOf(r.event)))
   const nextRegistered = registrations.docs
@@ -224,9 +236,21 @@ export default async function MembersAreaPage({
         />
         <Stat
           label="Equipación pendiente"
-          value={pendingEquipment.length ? `${pendingEquipment.length} artículo(s)` : 'Al día'}
-          tone={pendingEquipment.length ? 'warning' : 'success'}
-          hint={pendingEquipment.length ? 'Pásate por el club a recogerla' : 'Lo tienes todo'}
+          value={
+            equipment.pendingPickup.length
+              ? `${equipment.pendingPickup.length} prenda(s)`
+              : equipment.missingChoices.length
+                ? 'Sin elegir'
+                : 'Al día'
+          }
+          tone={equipment.pendingPickup.length || equipment.missingChoices.length ? 'warning' : 'success'}
+          hint={
+            equipment.pendingPickup.length
+              ? 'Pásate por el club a recogerla'
+              : equipment.missingChoices.length
+                ? 'Elige tu equipación en el perfil'
+                : 'Lo tienes todo'
+          }
         />
       </div>
 
@@ -267,16 +291,35 @@ export default async function MembersAreaPage({
             </Link>{' '}
             mientras no te la hayan entregado.
           </p>
-          {pendingEquipment.length > 0 && (
+          {equipment.pendingPickup.length > 0 && (
             <div className="mb-4 rounded-xl border border-abtr-yellow/50 bg-abtr-yellow/15 p-4">
               <p className="text-sm font-semibold">Te falta por recoger esta temporada:</p>
               <ul className="mt-2 flex flex-wrap gap-2">
-                {pendingEquipment.map((name) => (
-                  <li key={name}>
-                    <StatusBadge tone="warning">{name}</StatusBadge>
+                {equipment.pendingPickup.map((d) => (
+                  <li key={d.id}>
+                    <StatusBadge tone="warning">{describeGarment(d)}</StatusBadge>
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+          {equipment.missingChoices.length > 0 && (
+            <div className="mb-4 rounded-xl border border-border bg-muted/50 p-4">
+              <p className="text-sm font-semibold">Aún no has elegido:</p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {equipment.missingChoices.map((label) => (
+                  <li key={label}>
+                    <StatusBadge tone="neutral">{label}</StatusBadge>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Elígela en{' '}
+                <Link href="/socios/perfil#equipacion" className="font-semibold text-abtr-blue hover:underline">
+                  tu perfil
+                </Link>
+                .
+              </p>
             </div>
           )}
           {deliveries.docs.length > 0 ? (

@@ -303,45 +303,6 @@ describe('Borrar documentos con cosas que dependen de ellos', () => {
     expect(await count('equipment-stock', { item: { equals: sinUsar } })).toBe(0)
   })
 
-  it('borra una prenda metida en un pack y la quita del pack', async () => {
-    const categoryId = (
-      await payload.create({ collection: 'equipment-categories', data: { name: 'Chubasquero' }, overrideAccess: true })
-    ).id
-    const enPack = (
-      await payload.create({
-        collection: 'equipment-items',
-        data: { name: 'Chubasquero rojo', category: categoryId, sizeScale: scaleId },
-        overrideAccess: true,
-      })
-    ).id
-    const seQueda = (
-      await payload.create({
-        collection: 'equipment-items',
-        data: { name: 'Chubasquero azul', category: categoryId, sizeScale: scaleId },
-        overrideAccess: true,
-      })
-    ).id
-    const packId = (
-      await payload.create({
-        collection: 'equipment-packs',
-        data: {
-          name: 'Pack de bienvenida',
-          season: seasonId,
-          appliesToAll: true,
-          lines: [{ item: enPack, quantity: 1 }, { item: seQueda, quantity: 1 }],
-        },
-        overrideAccess: true,
-      })
-    ).id
-
-    await borrar('equipment-items', enPack)
-
-    const pack = await payload.findByID({ collection: 'equipment-packs', id: packId, depth: 0, overrideAccess: true })
-    const lineas = (pack.lines ?? []) as { item?: unknown }[]
-    expect(lineas).toHaveLength(1)
-    expect(lineas[0].item).toBe(seQueda)
-  })
-
   it('no borra una escala de tallas que se está usando', async () => {
     await expect(borrar('size-scales', scaleId)).rejects.toThrow(/No se puede borrar/i)
   })
