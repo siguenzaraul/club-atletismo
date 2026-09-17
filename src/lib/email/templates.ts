@@ -4,6 +4,7 @@ import {
   card,
   dataRow,
   escapeHtml,
+  EMAIL_CLUB_NAME,
   link,
   muted,
   p,
@@ -43,7 +44,7 @@ export const welcomeEmail = (args: {
   const { payment } = args
 
   const body = [
-    p('Ya eres parte del <strong>Club de Running Albatera</strong>. Nos alegra tenerte con nosotros — nos vemos en el asfalto.'),
+    p(`Ya eres parte del <strong>${EMAIL_CLUB_NAME}</strong>. Nos alegra tenerte con nosotros — nos vemos en el asfalto.`),
 
     card({
       accent: 'yellow',
@@ -96,7 +97,7 @@ export const welcomeEmail = (args: {
     .join('\n')
 
   const text = [
-    `Hola ${firstName}, ya eres parte del Club de Running Albatera.`,
+    `Hola ${firstName}, ya eres parte del ${EMAIL_CLUB_NAME}.`,
     '',
     'TU CUOTA',
     args.membershipTypeName ? `Alta como: ${args.membershipTypeName}.` : '',

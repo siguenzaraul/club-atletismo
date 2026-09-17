@@ -8,7 +8,7 @@ import {
   registrationConfirmedEmail,
   welcomeEmail,
 } from '@/lib/email/templates'
-import { escapeHtml } from '@/lib/email/render'
+import { EMAIL_CLUB_NAME, escapeHtml } from '@/lib/email/render'
 
 const footer = { email: 'hola@abtr.run', phone: '600000000', address: 'Albatera' }
 
@@ -327,5 +327,26 @@ describe('accesibilidad del shell', () => {
     const botones = [...mail.html.matchAll(/<td bgcolor="(#[0-9a-f]{6})"[^>]*border-radius:999px/gi)]
     expect(botones.length).toBeGreaterThan(0)
     for (const b of botones) expect(b[1].toLowerCase()).not.toBe('#009fe3')
+  })
+})
+
+/**
+ * El nombre del club sale en el remitente, la cabecera, el pie y la bienvenida. Estaba escrito a
+ * mano en cuatro sitios, así que un cambio parcial dejaba el remitente diciendo una cosa y el
+ * cuerpo otra. `payload.config.ts` usa esta misma constante para `defaultFromName`.
+ */
+describe('nombre del club en los correos', () => {
+  it('es el mismo en la cabecera y en el cuerpo, y no queda rastro del anterior', () => {
+    const mail = welcomeEmail({ name: 'Ana', footer })
+    expect(EMAIL_CLUB_NAME).toBe('Club de Atletismo Albaterun')
+    expect(mail.html).toContain(EMAIL_CLUB_NAME)
+    expect(mail.text).toContain(EMAIL_CLUB_NAME)
+    expect(mail.html).not.toContain('Club de Running Albatera')
+    expect(mail.html).not.toContain('${')
+  })
+
+  it('el pie enseña el nombre del club cuando no hay datos de contacto', () => {
+    const sinPie = contactAckEmail({ name: 'Ana', message: 'Hola' })
+    expect(sinPie.html).toContain(EMAIL_CLUB_NAME)
   })
 })

@@ -8,6 +8,14 @@ import { SITE_URL } from '@/lib/site'
  * del CMS sin ganar nada para cuatro correos cortos.
  */
 
+/**
+ * Nombre del club tal y como sale EN EL CORREO: remitente, cabecera, pie y bienvenida.
+ *
+ * Una sola constante porque estaba escrito a mano en cuatro sitios y el remitente podía acabar
+ * diciendo una cosa y el cuerpo otra. El nombre de la web vive aparte (`SITE_NAME`).
+ */
+export const EMAIL_CLUB_NAME = 'Club de Atletismo Albaterun'
+
 /** Obligatorio en TODO dato que venga del usuario (el aviso de contacto interpola texto libre). */
 export const escapeHtml = (value: unknown): string =>
   String(value ?? '')
@@ -145,7 +153,7 @@ export const shell = (opts: {
       <!-- Cabecera: banda negra, como las bandas band-ink de la web -->
       <tr><td bgcolor="${BLACK}" style="padding:24px 30px;">
         <span style="font-family:${FONT};font-size:21px;font-weight:800;letter-spacing:0.02em;color:#ffffff;">ABTR</span>
-        <span style="font-family:${FONT};font-size:13px;color:#ffffff;opacity:0.7;">&nbsp;· Club de Running Albatera</span>
+        <span style="font-family:${FONT};font-size:13px;color:#ffffff;opacity:0.7;">&nbsp;· ${EMAIL_CLUB_NAME}</span>
       </td></tr>
 
       <!-- Filete tricolor de marca. Decorativo: no comunica nada que no diga el texto. -->
@@ -165,7 +173,7 @@ export const shell = (opts: {
 
       <tr><td style="padding:26px 30px 30px;border-top:1px solid ${HAIRLINE};">
         <p style="margin:0;font-family:${FONT};font-size:13px;line-height:1.7;color:${MUTED};">
-          ${contact || 'Club de Running Albatera'}<br>
+          ${contact || EMAIL_CLUB_NAME}<br>
           <a href="${SITE_URL}" style="color:${LINK};text-decoration:underline;">Ir a la web del club</a>
         </p>
       </td></tr>

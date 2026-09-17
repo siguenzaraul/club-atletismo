@@ -33,6 +33,7 @@ import { ContactMessages } from './collections/ContactMessages'
 import { SiteSettings } from './globals/SiteSettings'
 import { HomePage } from './globals/HomePage'
 import { RegistrationForm } from './globals/RegistrationForm'
+import { EMAIL_CLUB_NAME } from './lib/email/render'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -139,7 +140,8 @@ export default buildConfig({
     ? {
         email: resendAdapter({
           defaultFromAddress: process.env.EMAIL_FROM_ADDRESS || 'no-reply@abtr.run',
-          defaultFromName: 'ABTR — Club de Running Albatera',
+          // Mismo nombre que enseña la cabecera y el pie del correo: ver src/lib/email/render.ts.
+          defaultFromName: EMAIL_CLUB_NAME,
           apiKey: resendKey!,
         }),
       }
