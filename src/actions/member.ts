@@ -15,6 +15,18 @@ const MAX_PERSONAL_BESTS = 20
 
 const VALID_CATEGORIES = MEMBER_CATEGORIES.map((c) => c.value) as readonly string[]
 
+/** Un checkbox marcado llega como 'on', 'yes' o 'true' según cómo se declare en el HTML. */
+const isChecked = (raw: FormDataEntryValue | null): boolean =>
+  raw === 'on' || raw === 'yes' || raw === 'true'
+
+/** Campo numérico vacío = sin dato. `Number('')` es 0, y eso escribía un cero inventado. */
+const numberOrNull = (raw: FormDataEntryValue | null): number | null => {
+  const s = String(raw ?? '').trim()
+  if (!s) return null
+  const n = Number(s)
+  return Number.isFinite(n) ? n : null
+}
+
 /** A logged-in member cancels one of their own registrations. */
 export const cancelRegistrationAction = async (registrationId: number): Promise<ActionResult> => {
   const member = await currentMember()
@@ -100,15 +112,20 @@ export const updateProfileAction = async (
     })
     for (const def of defs.docs) {
       const raw = formData.get(`attr_${def.id}`)
-      if (raw === null) continue
       const type = def.type as AttributeType
+      // Un archivo no viaja en este formulario; si llegara sería basura para una relación.
+      if (type === 'file') continue
+      // Un checkbox desmarcado NO envía nada: tratar el hueco como `false` es lo único que
+      // permite al socio quitar una marca que ya tenía. Antes salía por `continue` y el
+      // valor se quedaba en `true` para siempre.
+      if (raw === null && type !== 'boolean') continue
       const field = valueFieldFor(type)
       const value =
         type === 'boolean'
-          ? raw === 'on' || raw === 'true'
+          ? isChecked(raw)
           : type === 'number'
-            ? Number(raw)
-            : String(raw)
+            ? numberOrNull(raw)
+            : String(raw ?? '')
 
       const existing = await payload.find({
         collection: 'member-attributes',

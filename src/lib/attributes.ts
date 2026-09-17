@@ -32,6 +32,30 @@ export const valueFieldFor = (type: AttributeType): keyof MemberAttribute => {
   }
 }
 
+/**
+ * Valor crudo listo para meterlo en un `<input>`/`<select>` del formulario.
+ *
+ * El caso que importa es `date`: se guarda como marca de tiempo ISO y un `<input type="date">`
+ * sólo acepta `yyyy-MM-dd` — con cualquier otra cosa se pinta **vacío en silencio**, así que el
+ * socio veía su fecha en blanco y al guardar la borraba.
+ */
+export const attributeInputValue = (raw: unknown, type: AttributeType): string => {
+  if (raw == null) return ''
+  switch (type) {
+    case 'boolean':
+      return ''
+    case 'date': {
+      const d = new Date(String(raw))
+      return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10)
+    }
+    // Un archivo no se edita desde estos formularios: su valor es una relación, no texto.
+    case 'file':
+      return ''
+    default:
+      return String(raw)
+  }
+}
+
 /** Human-readable value of a member attribute, given its definition type. */
 export const formatAttributeValue = (
   attr: Pick<

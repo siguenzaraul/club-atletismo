@@ -9,7 +9,14 @@ import { ValidationError } from 'payload'
 import type { Payload } from 'payload'
 
 import { getCurrentSeason } from '@/lib/membership'
-import { getEmailFooter, sendEmailAfterResponse, welcomeEmail } from '@/lib/email'
+import {
+  getEmailFooter,
+  getStaffNotifyAddress,
+  newMemberEmail,
+  sendEmailAfterResponse,
+  welcomeEmail,
+} from '@/lib/email'
+import { MEMBER_CATEGORIES } from '@/collections/Members'
 import { reserveEquipmentForMember, type GarmentSelection } from '@/lib/equipment'
 import { getClubPaymentInfo, paymentConcept } from '@/lib/payments'
 import type { Member } from '@/payload-types'
@@ -194,6 +201,7 @@ export const completeRegistration = async (
 
   if (!args.sendWelcome || !args.email) return
 
+  let membershipTypeName: string | null = null
   try {
     const [footer, membershipType, paymentInfo] = await Promise.all([
       getEmailFooter(payload),
@@ -204,6 +212,7 @@ export const completeRegistration = async (
         : Promise.resolve(null),
       getClubPaymentInfo(payload),
     ])
+    membershipTypeName = membershipType?.name ?? null
     // Un tipo de socio exento (honorífico, por ejemplo) no debe recibir ninguna cuenta. Sin
     // tipo asignado sí se manda: la cuota queda pendiente y el club la cobrará igual.
     const requiresPayment = membershipType ? membershipType.requiresPayment !== false : true
@@ -228,5 +237,37 @@ export const completeRegistration = async (
     })
   } catch (err) {
     payload.logger.error({ err }, 'completeRegistration: welcome email failed')
+  }
+
+  // Copia para el club: sin esto, un alta sólo se ve entrando en /gestion. Va en su propio
+  // try/catch y detrás del correo del socio, que es el que no puede faltar.
+  try {
+    const [to, footer, member] = await Promise.all([
+      getStaffNotifyAddress(payload),
+      getEmailFooter(payload),
+      payload
+        .findByID({ collection: 'members', id: args.memberId, depth: 0, overrideAccess: true })
+        .catch(() => null),
+    ])
+    if (to) {
+      await sendEmailAfterResponse(payload, {
+        to,
+        // Responder al aviso escribe al socio, que es lo que el club querrá hacer.
+        replyTo: args.email,
+        ...newMemberEmail({
+          memberId: args.memberId,
+          memberName: args.name || member?.name || args.email,
+          memberEmail: args.email,
+          memberPhone: member?.phone ?? null,
+          categoryLabel:
+            MEMBER_CATEGORIES.find((c) => c.value === (member?.category ?? args.category))?.label ?? null,
+          membershipTypeName,
+          eventTitle,
+          footer,
+        }),
+      })
+    }
+  } catch (err) {
+    payload.logger.error({ err, memberId: args.memberId }, 'completeRegistration: aviso de alta al club falló')
   }
 }

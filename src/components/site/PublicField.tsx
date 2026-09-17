@@ -30,6 +30,10 @@ export const publicFieldClass =
 
 export const publicLabelClass = 'text-sm font-semibold text-foreground'
 
+/** Botón de envío de los formularios públicos. Mismo aspecto en alta, login y perfil. */
+export const publicSubmitClass =
+  'w-full rounded-full bg-abtr-red px-6 py-3 font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50'
+
 export function FieldShell({
   label,
   htmlFor,

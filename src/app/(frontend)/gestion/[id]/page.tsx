@@ -5,7 +5,7 @@ import { CalendarCheckIcon, MedalIcon } from 'lucide-react'
 import { currentStaff } from '@/lib/session'
 import { getClient } from '@/lib/payload'
 import { getCurrentSeason } from '@/lib/membership'
-import { valueFieldFor, type AttributeType } from '@/lib/attributes'
+import { attributeInputValue, valueFieldFor, type AttributeType } from '@/lib/attributes'
 import { formatDate } from '@/lib/format'
 import { MEMBER_CATEGORIES } from '@/collections/Members'
 import { DatosForm } from '@/components/gestion/DatosForm'
@@ -77,7 +77,7 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
       // vienen resueltas dentro del propio documento, así que no desaparecen del histórico.
       payload.find({ collection: 'sizes', where: { active: { not_equals: false } }, sort: 'order', limit: 500, depth: 0, overrideAccess: true }),
       payload.find({ collection: 'equipment-deliveries', where: { member: { equals: memberId } }, depth: 1, limit: 200, overrideAccess: true }),
-      payload.find({ collection: 'attribute-definitions', where: { active: { equals: true } }, sort: 'order', limit: 200, overrideAccess: true }),
+      payload.find({ collection: 'attribute-definitions', where: { active: { equals: true } }, sort: ['order', 'label'], limit: 200, overrideAccess: true }),
       payload.find({ collection: 'member-attributes', where: { member: { equals: memberId } }, limit: 200, overrideAccess: true }),
       payload.find({ collection: 'event-registrations', where: { member: { equals: memberId } }, depth: 1, limit: 100, overrideAccess: true }),
       payload.find({ collection: 'results', where: { member: { equals: memberId } }, depth: 1, limit: 100, overrideAccess: true }),
@@ -104,7 +104,7 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
       id: def.id,
       label: def.label,
       type,
-      value: type === 'boolean' ? '' : raw != null ? String(raw) : '',
+      value: attributeInputValue(raw, type),
       boolean: type === 'boolean' ? Boolean(raw) : false,
       options: (def.options ?? []).map((o) => o.label).filter((l): l is string => Boolean(l)),
     }

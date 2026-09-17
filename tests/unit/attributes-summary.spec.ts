@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { summarizeSelectField } from '@/lib/attributes'
+import { attributeInputValue, summarizeSelectField } from '@/lib/attributes'
 
 const shirt = {
   id: 1,
@@ -40,5 +40,27 @@ describe('summarizeSelectField', () => {
     expect(s.options).toEqual([])
     expect(s.answered).toBe(0)
     expect(s.group).toBe('General')
+  })
+})
+
+describe('attributeInputValue', () => {
+  it('normaliza una fecha ISO a lo único que acepta <input type="date">', () => {
+    expect(attributeInputValue('2026-04-12T00:00:00.000Z', 'date')).toBe('2026-04-12')
+  })
+
+  it('devuelve vacío para fechas ilegibles en vez de ensuciar el campo', () => {
+    expect(attributeInputValue('no es una fecha', 'date')).toBe('')
+    expect(attributeInputValue(null, 'date')).toBe('')
+  })
+
+  it('no mete valor en los tipos que el formulario no edita como texto', () => {
+    expect(attributeInputValue(true, 'boolean')).toBe('')
+    expect(attributeInputValue({ id: 4 }, 'file')).toBe('')
+  })
+
+  it('pasa el resto tal cual', () => {
+    expect(attributeInputValue('M', 'select')).toBe('M')
+    expect(attributeInputValue(42, 'number')).toBe('42')
+    expect(attributeInputValue('Hola', 'text')).toBe('Hola')
   })
 })

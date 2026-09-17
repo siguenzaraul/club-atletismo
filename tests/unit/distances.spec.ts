@@ -83,3 +83,25 @@ describe('parseDistanceToMeters', () => {
     expect(parseDistanceToMeters(undefined)).toBeNull()
   })
 })
+
+/**
+ * El formulario de la ficha pública repinta la distancia guardada con `distanceLabel` y la
+ * vuelve a enviar como texto: si el parser no entiende su propia etiqueta, el socio no puede
+ * guardar dos veces seguidas. Esto pasó con «1.500 m» y «3.000 m».
+ */
+describe('ida y vuelta etiqueta → metros', () => {
+  it.each(STANDARD_DISTANCES.map((d) => [d.label, d.meters] as const))(
+    '«%s» vuelve a %i metros',
+    (label, meters) => {
+      expect(parseDistanceToMeters(label)).toBe(meters)
+    },
+  )
+
+  it.each([800, 3500, 7500, 12000])('una distancia libre de %i m también vuelve', (meters) => {
+    expect(parseDistanceToMeters(distanceLabel(meters))).toBe(meters)
+  })
+
+  it('no confunde un decimal suelto con separador de miles', () => {
+    expect(parseDistanceToMeters('1,5 m')).toBeNull()
+  })
+})

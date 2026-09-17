@@ -4,8 +4,9 @@ import React, { useActionState, useId, useState } from 'react'
 import { PlusIcon, Trash2Icon } from 'lucide-react'
 
 import { updatePublicProfileAction, type ActionResult } from '@/actions/member'
-import { STANDARD_DISTANCES } from '@/lib/distances'
+import { STANDARD_DISTANCES, distanceLabel } from '@/lib/distances'
 import { Button } from '@/components/ui/button'
+import { publicFieldClass, publicSubmitClass } from './PublicField'
 
 export type PersonalBestRow = {
   distanceMeters?: number | null
@@ -16,8 +17,9 @@ export type PersonalBestRow = {
 
 const initial: ActionResult = { ok: false }
 
-const inputClass =
-  'w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-abtr-blue'
+// Mismo campo que el resto de formularios públicos (alta, login, perfil): esta rejilla tenía su
+// propia caja más pequeña y la página mezclaba dos densidades distintas.
+const inputClass = publicFieldClass
 
 let nextKey = 0
 const withKeys = (rows: PersonalBestRow[]) => rows.map((row) => ({ key: nextKey++, row }))
@@ -108,7 +110,9 @@ export function PublicProfileForm({
                 id={`pb-${key}-d`}
                 name={`pb_${i}_distancia`}
                 list="abtr-distancias"
-                defaultValue={row.distanceMeters ?? ''}
+                // Etiqueta («10K»), no los metros crudos: se guarda en metros y al volver
+                // el socio se encontraba un «10000» en una caja que pedía «10K».
+                defaultValue={row.distanceMeters ? distanceLabel(row.distanceMeters) : ''}
                 placeholder="10K"
                 className={inputClass}
               />
@@ -186,9 +190,9 @@ export function PublicProfileForm({
         </p>
       )}
 
-      <Button type="submit" disabled={pending} aria-busy={pending} className="self-start">
+      <button type="submit" disabled={pending} aria-busy={pending} className={publicSubmitClass}>
         {pending ? 'Guardando…' : 'Guardar ficha pública'}
-      </Button>
+      </button>
     </form>
   )
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   contactAckEmail,
   contactNotificationEmail,
+  newMemberEmail,
   paymentReportedEmail,
   registrationConfirmedEmail,
   welcomeEmail,
@@ -87,6 +88,43 @@ describe('welcomeEmail', () => {
       expect(sinImporte.html).toContain('&lt;b&gt;Antes del 31&lt;/b&gt;')
       expect(sinImporte.html).not.toContain('<b>Antes del 31</b>')
     })
+  })
+})
+
+describe('newMemberEmail', () => {
+  const mail = newMemberEmail({
+    memberId: 12,
+    memberName: 'Ana Pérez',
+    memberEmail: 'ana@ejemplo.com',
+    memberPhone: '600111222',
+    categoryLabel: 'Popular',
+    membershipTypeName: 'Adulto',
+    eventTitle: 'ALBATERUN 5K',
+    footer,
+  })
+
+  it('resume el alta y enlaza a la ficha del socio', () => {
+    expect(mail.subject).toContain('Ana Pérez')
+    expect(mail.html).toContain('ana@ejemplo.com')
+    expect(mail.html).toContain('600111222')
+    expect(mail.html).toContain('ALBATERUN 5K')
+    expect(mail.html).toContain('/gestion/12')
+  })
+
+  it('dice «Sin asignar» cuando el alta no trae tipo de socio', () => {
+    const sinTipo = newMemberEmail({ memberId: 1, memberName: 'Ana', memberEmail: 'a@b.c' })
+    expect(sinTipo.html).toContain('Sin asignar')
+    expect(sinTipo.text).toContain('Sin asignar')
+  })
+
+  it('escapa el nombre, que lo teclea el propio usuario en el alta', () => {
+    const hostil = newMemberEmail({
+      memberId: 1,
+      memberName: '<img src=x onerror=alert(1)>',
+      memberEmail: 'a@b.c',
+    })
+    expect(hostil.html).not.toContain('<img src=x')
+    expect(hostil.html).toContain('&lt;img')
   })
 })
 
@@ -202,6 +240,16 @@ describe('accesibilidad del shell', () => {
     ['bienvenida', welcomeEmail({ name: 'Ana Pérez', membershipTypeName: 'Adulto', eventTitle: 'ALBATERUN', footer })],
     ['bienvenida mínima', welcomeEmail({ name: 'Ana', footer })],
     ['bienvenida con cuenta de pago', welcomeEmail({ name: 'Ana Pérez', payment, footer })],
+    [
+      'aviso de alta',
+      newMemberEmail({
+        memberId: 9,
+        memberName: 'Ana Pérez',
+        memberEmail: 'ana@ejemplo.com',
+        membershipTypeName: 'Adulto',
+        footer,
+      }),
+    ],
     [
       'aviso de pago',
       paymentReportedEmail({

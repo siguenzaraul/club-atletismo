@@ -5,7 +5,7 @@ import { getClient } from '@/lib/payload'
 import { ProfileForm, type EditableAttribute } from '@/components/site/ProfileForm'
 import { PublicProfileForm } from '@/components/site/PublicProfileForm'
 import { PageHeader } from '@/components/ui/page-header'
-import { valueFieldFor, type AttributeType } from '@/lib/attributes'
+import { attributeInputValue, valueFieldFor, type AttributeType } from '@/lib/attributes'
 import type { MemberAttribute } from '@/payload-types'
 
 export const dynamic = 'force-dynamic'
@@ -20,7 +20,10 @@ export default async function ProfilePage() {
     payload.find({
       collection: 'attribute-definitions',
       where: { and: [{ active: { equals: true } }, { editableByMember: { equals: true } }] },
-      sort: 'order',
+      // Segundo criterio a propósito: casi todas las definiciones tienen `order: 0`, y con un
+      // solo criterio Postgres devuelve los empates en el orden que quiera — los campos se
+      // recolocaban solos entre recargas.
+      sort: ['order', 'label'],
       limit: 200,
     }),
     payload.find({
@@ -37,19 +40,26 @@ export default async function ProfilePage() {
     if (defId) byDef.set(defId, a)
   }
 
-  const editableAttributes: EditableAttribute[] = defsRes.docs.map((def) => {
-    const type = def.type as AttributeType
-    const attr = byDef.get(def.id)
-    const rawField = valueFieldFor(type)
-    const raw = attr ? (attr as unknown as Record<string, unknown>)[rawField] : null
-    return {
-      id: def.id,
-      label: def.label,
-      type,
-      value: type === 'boolean' ? '' : raw != null ? String(raw) : '',
-      boolean: type === 'boolean' ? Boolean(raw) : false,
-    }
-  })
+  const editableAttributes: EditableAttribute[] = defsRes.docs
+    // Un archivo no se puede subir desde este formulario: se pintaba como caja de texto con el
+    // id del fichero dentro, y guardarlo lo rompía. Lo gestiona el club desde el panel.
+    .filter((def) => def.type !== 'file')
+    .map((def) => {
+      const type = def.type as AttributeType
+      const attr = byDef.get(def.id)
+      const rawField = valueFieldFor(type)
+      const raw = attr ? (attr as unknown as Record<string, unknown>)[rawField] : null
+      return {
+        id: def.id,
+        label: def.label,
+        type,
+        value: attributeInputValue(raw, type),
+        boolean: type === 'boolean' ? Boolean(raw) : false,
+        options: (def.options ?? [])
+          .map((o) => o?.label?.trim())
+          .filter((l): l is string => Boolean(l)),
+      }
+    })
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
@@ -62,6 +72,7 @@ export default async function ProfilePage() {
         <ProfileForm
           defaults={{
             name: member.name ?? '',
+            email: member.email ?? '',
             phone: member.phone ?? '',
             federationNumber: member.federationNumber ?? '',
             category: member.category ?? 'popular',

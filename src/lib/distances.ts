@@ -98,10 +98,12 @@ export const parseDistanceToMeters = (raw: string | number | null | undefined): 
     return Number.isFinite(n) && n > 0 ? Math.round(n * 1000) : null
   }
 
-  // "5000 m" / "800m" → metros.
-  const m = /^(\d+)\s*(m|metros?)$/.exec(s)
+  // "5000 m" / "800m" / "1.500 m" → metros. El separador de miles es obligatorio en grupos de
+  // tres para no tragarse un "1,5 m"; y hace falta porque las etiquetas del catálogo lo llevan
+  // ("1.500 m"), así que sin esto no se podía volver a guardar lo que la propia web había pintado.
+  const m = /^(\d+(?:[.,]\d{3})*)\s*(m|metros?)$/.exec(s)
   if (m) {
-    const n = Number(m[1])
+    const n = Number(m[1].replace(/[.,]/g, ''))
     return Number.isFinite(n) && n > 0 ? n : null
   }
 

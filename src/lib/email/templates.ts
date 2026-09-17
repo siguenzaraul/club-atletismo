@@ -200,6 +200,55 @@ export const contactAckEmail = (args: {
   return { subject, html: shell({ title: subject, body, footer: args.footer }), text }
 }
 
+/** Aviso interno: alguien se ha dado de alta desde la web. Copia para el club, no para el socio. */
+export const newMemberEmail = (args: {
+  memberId: number
+  memberName: string
+  memberEmail: string
+  memberPhone?: string | null
+  categoryLabel?: string | null
+  membershipTypeName?: string | null
+  eventTitle?: string | null
+  footer?: EmailFooter
+}): EmailContent => {
+  const subject = `Nuevo socio — ${args.memberName}`
+
+  const body = [
+    p('Alguien acaba de darse de alta desde la web. Su cuota queda <strong>pendiente</strong> hasta que la confirmes.'),
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px;">
+      ${dataRow('Socio', args.memberName)}
+      ${dataRow('Email', args.memberEmail)}
+      ${args.memberPhone ? dataRow('Teléfono', args.memberPhone) : ''}
+      ${args.categoryLabel ? dataRow('Categoría', args.categoryLabel) : ''}
+      ${dataRow('Tipo de socio', args.membershipTypeName || 'Sin asignar')}
+      ${args.eventTitle ? dataRow('Se inscribió en', args.eventTitle) : ''}
+    </table>`,
+    button(`${SITE_URL}/gestion/${args.memberId}`, 'Ver la ficha del socio'),
+    muted('Ya le hemos mandado a él el correo de bienvenida con la cuenta para pagar la cuota.'),
+  ].join('\n')
+
+  const text = [
+    'Alguien acaba de darse de alta desde la web. Su cuota queda pendiente hasta que la confirmes.',
+    '',
+    `Socio: ${args.memberName}`,
+    `Email: ${args.memberEmail}`,
+    args.memberPhone ? `Teléfono: ${args.memberPhone}` : '',
+    args.categoryLabel ? `Categoría: ${args.categoryLabel}` : '',
+    `Tipo de socio: ${args.membershipTypeName || 'Sin asignar'}`,
+    args.eventTitle ? `Se inscribió en: ${args.eventTitle}` : '',
+    '',
+    `Ficha del socio: ${SITE_URL}/gestion/${args.memberId}`,
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  return {
+    subject,
+    html: shell({ title: subject, body, footer: args.footer, eyebrow: 'Alta desde la web' }),
+    text,
+  }
+}
+
 /**
  * Aviso interno: un socio dice que ya ha ingresado su cuota. La cuota NO se marca como pagada
  * sola — este correo existe para que alguien del club compruebe el movimiento y la confirme.

@@ -681,11 +681,18 @@ export const saveCamposAction = async (_prev: StaffResult, formData: FormData): 
     for (const def of defs.docs) {
       const raw = formData.get(`attr_${def.id}`)
       const type = def.type as AttributeType
+      // Un archivo no viaja en este formulario; si llegara sería basura para una relación.
+      if (type === 'file') continue
       // Checkboxes send nothing when unchecked; treat missing boolean as false.
       if (raw === null && type !== 'boolean') continue
       const field = valueFieldFor(type)
       const value =
-        type === 'boolean' ? raw === 'on' || raw === 'true' : type === 'number' ? Number(raw) : String(raw ?? '')
+        type === 'boolean'
+          ? raw === 'on' || raw === 'yes' || raw === 'true'
+          : type === 'number'
+            ? // `Number('')` es 0: vaciar el campo escribía un cero inventado.
+              (String(raw ?? '').trim() === '' ? null : Number(raw))
+            : String(raw ?? '')
 
       const existing = await payload.find({
         collection: 'member-attributes',

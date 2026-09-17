@@ -6,11 +6,14 @@ import { toast } from 'sonner'
 
 import { updateProfileAction, type ActionResult } from '@/actions/member'
 import { MEMBER_CATEGORIES } from '@/collections/Members'
-import { Field } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { NativeSelect } from '@/components/ui/native-select'
-import { Button } from '@/components/ui/button'
+import {
+  FieldShell,
+  PublicField,
+  PublicSelect,
+  PublicTextarea,
+  publicFieldClass,
+  publicSubmitClass,
+} from './PublicField'
 
 export type EditableAttribute = {
   id: number
@@ -18,21 +21,26 @@ export type EditableAttribute = {
   type: string
   value: string
   boolean: boolean
+  /** Sólo para el tipo `select`: las opciones que definió el club. */
+  options: string[]
 }
 
 export function ProfileForm({
   defaults,
   editableAttributes,
 }: {
-  defaults: { name: string; phone: string; federationNumber: string; category: string }
+  defaults: {
+    name: string
+    email: string
+    phone: string
+    federationNumber: string
+    category: string
+  }
   editableAttributes: EditableAttribute[]
 }) {
   const [state, action, pending] = useActionState<ActionResult, FormData>(updateProfileAction, { ok: false })
   const router = useRouter()
-  const nameId = useId()
-  const phoneId = useId()
-  const fedId = useId()
-  const catId = useId()
+  const emailId = useId()
   const seen = useRef(state)
 
   useEffect(() => {
@@ -48,24 +56,55 @@ export function ProfileForm({
 
   return (
     <form action={action} className="flex flex-col gap-4">
-      <Field label="Nombre completo" htmlFor={nameId}>
-        <Input id={nameId} name="name" required autoComplete="name" defaultValue={defaults.name} />
-      </Field>
-      <Field label="Teléfono móvil" htmlFor={phoneId}>
-        <Input id={phoneId} name="phone" type="tel" inputMode="tel" autoComplete="tel" defaultValue={defaults.phone} required />
-      </Field>
-      <Field label="Nº de federación" htmlFor={fedId} optional>
-        <Input id={fedId} name="federationNumber" defaultValue={defaults.federationNumber} />
-      </Field>
-      <Field label="Categoría deportiva" htmlFor={catId}>
-        <NativeSelect id={catId} name="category" defaultValue={defaults.category}>
-          {MEMBER_CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </NativeSelect>
-      </Field>
+      <PublicField
+        name="name"
+        label="Nombre completo"
+        required
+        autoComplete="name"
+        defaultValue={defaults.name}
+      />
+
+      {/* El email identifica la cuenta y no se cambia desde aquí, pero el socio necesita verlo:
+          es el dato por el que entra y al que le llegan los correos del club. */}
+      <FieldShell
+        label="Email"
+        htmlFor={emailId}
+        messageId={`${emailId}-msg`}
+        hint="Es tu usuario para entrar. Para cambiarlo, escríbenos."
+      >
+        <input
+          id={emailId}
+          type="email"
+          value={defaults.email}
+          readOnly
+          aria-describedby={`${emailId}-msg`}
+          className={`${publicFieldClass} cursor-not-allowed text-muted-foreground`}
+        />
+      </FieldShell>
+
+      <PublicField
+        name="phone"
+        label="Teléfono móvil"
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        required
+        minLength={9}
+        placeholder="+34 600 000 000"
+        defaultValue={defaults.phone}
+      />
+      <PublicField
+        name="federationNumber"
+        label="Nº de federación (opcional)"
+        defaultValue={defaults.federationNumber}
+      />
+      <PublicSelect name="category" label="Categoría deportiva" defaultValue={defaults.category}>
+        {MEMBER_CATEGORIES.map((c) => (
+          <option key={c.value} value={c.value}>
+            {c.label}
+          </option>
+        ))}
+      </PublicSelect>
 
       {editableAttributes.length > 0 && (
         <fieldset className="mt-2 flex flex-col gap-4 border-t border-border pt-4">
@@ -76,9 +115,15 @@ export function ProfileForm({
         </fieldset>
       )}
 
-      <Button type="submit" disabled={pending} aria-busy={pending} className="mt-2 h-11 w-full">
+      {state.error && (
+        <p role="alert" className="text-sm font-semibold text-destructive">
+          {state.error}
+        </p>
+      )}
+
+      <button type="submit" disabled={pending} aria-busy={pending} className={publicSubmitClass}>
         {pending ? 'Guardando…' : 'Guardar cambios'}
-      </Button>
+      </button>
     </form>
   )
 }
@@ -86,26 +131,48 @@ export function ProfileForm({
 function AttributeField({ attr }: { attr: EditableAttribute }) {
   const id = useId()
   const name = `attr_${attr.id}`
+
   if (attr.type === 'boolean') {
     return (
-      <label htmlFor={id} className="flex items-center gap-3 rounded-lg border border-border p-3">
-        <input id={id} name={name} type="checkbox" defaultChecked={attr.boolean} className="size-5 accent-primary" />
-        <span className="text-sm font-medium text-foreground">{attr.label}</span>
+      <label htmlFor={id} className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4">
+        <input
+          id={id}
+          name={name}
+          type="checkbox"
+          value="yes"
+          defaultChecked={attr.boolean}
+          className="mt-0.5 size-5 shrink-0 accent-abtr-blue"
+        />
+        <span className="text-sm leading-relaxed text-foreground/80">{attr.label}</span>
       </label>
     )
   }
+
+  if (attr.type === 'select') {
+    // Antes era un campo de texto libre: el socio tecleaba lo que quería y se guardaba tal cual,
+    // así que el recuento por opciones de /gestion/resumen contaba valores que no existían.
+    return (
+      <PublicSelect name={name} label={attr.label} defaultValue={attr.value}>
+        <option value="">Sin especificar</option>
+        {attr.options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </PublicSelect>
+    )
+  }
+
+  if (attr.type === 'longtext') {
+    return <PublicTextarea name={name} label={attr.label} rows={3} defaultValue={attr.value} />
+  }
+
   return (
-    <Field label={attr.label} htmlFor={id}>
-      {attr.type === 'longtext' ? (
-        <Textarea id={id} name={name} defaultValue={attr.value} rows={3} />
-      ) : (
-        <Input
-          id={id}
-          name={name}
-          type={attr.type === 'number' ? 'number' : attr.type === 'date' ? 'date' : 'text'}
-          defaultValue={attr.value}
-        />
-      )}
-    </Field>
+    <PublicField
+      name={name}
+      label={attr.label}
+      type={attr.type === 'number' ? 'number' : attr.type === 'date' ? 'date' : 'text'}
+      defaultValue={attr.value}
+    />
   )
 }
