@@ -1,6 +1,6 @@
 import type { GlobalConfig } from 'payload'
 
-import { anyone, isAdminOrEditor } from '../access'
+import { anyone, isAdminOrEditor, isAdminOrEditorFieldLevel } from '../access'
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
@@ -18,6 +18,40 @@ export const SiteSettings: GlobalConfig = {
         { name: 'email', type: 'text', label: 'Email de contacto' },
         { name: 'phone', type: 'text', label: 'Teléfono' },
         { name: 'address', type: 'text', label: 'Dirección' },
+      ],
+    },
+    {
+      type: 'collapsible',
+      label: 'Cuota: cuenta para el pago',
+      admin: {
+        description:
+          'Se muestra en la zona de socio y en el correo de bienvenida. Si lo dejas vacío se usa la cuenta que ya tiene el club configurada en el código.',
+      },
+      fields: [
+        {
+          name: 'bankIban',
+          type: 'text',
+          label: 'IBAN',
+          // Lectura restringida a staff: este global es `read: anyone`, y sin esto el IBAN se
+          // serviría en /api/globals/site-settings a cualquiera. Quien lo necesita
+          // (correo y zona de socio) lo lee con `overrideAccess` desde src/lib/payments.ts.
+          access: { read: isAdminOrEditorFieldLevel, update: isAdminOrEditorFieldLevel },
+          admin: { placeholder: 'ES00 0000 0000 0000 0000 0000' },
+        },
+        {
+          name: 'bankHolder',
+          type: 'text',
+          label: 'Titular de la cuenta',
+          access: { read: isAdminOrEditorFieldLevel, update: isAdminOrEditorFieldLevel },
+          admin: { placeholder: 'Club de Running Albatera' },
+        },
+        {
+          name: 'paymentNotes',
+          type: 'textarea',
+          label: 'Instrucciones de pago',
+          access: { read: isAdminOrEditorFieldLevel, update: isAdminOrEditorFieldLevel },
+          admin: { description: 'Opcional: plazos, pago en mano, a quién preguntar…' },
+        },
       ],
     },
     {

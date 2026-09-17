@@ -384,6 +384,10 @@ export interface Membership {
   type?: (number | null) | MembershipType;
   paymentStatus?: ('pending' | 'paid' | 'exempt' | 'cancelled') | null;
   paidAt?: string | null;
+  /**
+   * Lo marca el propio socio desde su zona («Ya he hecho el ingreso»). Sigue pendiente hasta que el club lo confirme aquí.
+   */
+  paymentReportedAt?: string | null;
   amount?: number | null;
   notes?: string | null;
   updatedAt: string;
@@ -1241,6 +1245,7 @@ export interface MembershipsSelect<T extends boolean = true> {
   type?: T;
   paymentStatus?: T;
   paidAt?: T;
+  paymentReportedAt?: T;
   amount?: T;
   notes?: T;
   updatedAt?: T;
@@ -1517,6 +1522,12 @@ export interface SiteSetting {
   email?: string | null;
   phone?: string | null;
   address?: string | null;
+  bankIban?: string | null;
+  bankHolder?: string | null;
+  /**
+   * Opcional: plazos, pago en mano, a quién preguntar…
+   */
+  paymentNotes?: string | null;
   instagram?: string | null;
   facebook?: string | null;
   strava?: string | null;
@@ -1601,6 +1612,9 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   email?: T;
   phone?: T;
   address?: T;
+  bankIban?: T;
+  bankHolder?: T;
+  paymentNotes?: T;
   instagram?: T;
   facebook?: T;
   strava?: T;

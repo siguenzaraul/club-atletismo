@@ -1,6 +1,7 @@
 import * as migration_20260831_133622_baseline from './20260831_133622_baseline';
 import * as migration_20260831_133632_marcas_personales from './20260831_133632_marcas_personales';
 import * as migration_20260913_183541_equipacion_y_patrocinadores from './20260913_183541_equipacion_y_patrocinadores';
+import * as migration_20260917_074532_pago_cuota from './20260917_074532_pago_cuota';
 
 export const migrations = [
   {
@@ -16,6 +17,11 @@ export const migrations = [
   {
     up: migration_20260913_183541_equipacion_y_patrocinadores.up,
     down: migration_20260913_183541_equipacion_y_patrocinadores.down,
-    name: '20260913_183541_equipacion_y_patrocinadores'
+    name: '20260913_183541_equipacion_y_patrocinadores',
+  },
+  {
+    up: migration_20260917_074532_pago_cuota.up,
+    down: migration_20260917_074532_pago_cuota.down,
+    name: '20260917_074532_pago_cuota'
   },
 ];

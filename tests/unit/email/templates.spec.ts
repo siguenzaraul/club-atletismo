@@ -3,12 +3,21 @@ import { describe, expect, it } from 'vitest'
 import {
   contactAckEmail,
   contactNotificationEmail,
+  paymentReportedEmail,
   registrationConfirmedEmail,
   welcomeEmail,
 } from '@/lib/email/templates'
 import { escapeHtml } from '@/lib/email/render'
 
 const footer = { email: 'hola@abtr.run', phone: '600000000', address: 'Albatera' }
+
+const payment = {
+  formattedIban: 'ES49 3005 0050 0530 3295 0226',
+  holder: 'Club de Running Albatera',
+  concept: 'Cuota 2025/26 Ana Pérez',
+  amount: 30,
+  notes: null,
+}
 
 describe('escapeHtml', () => {
   it('neutraliza el HTML de datos de usuario', () => {
@@ -43,6 +52,78 @@ describe('welcomeEmail', () => {
     const withEvent = welcomeEmail({ name: 'Ana', eventTitle: 'ALBATERUN 5K', footer })
     expect(withEvent.html).toContain('ALBATERUN 5K')
     expect(withEvent.text).toContain('ALBATERUN 5K')
+  })
+
+  describe('cuenta para el pago de la cuota', () => {
+    const conPago = welcomeEmail({ name: 'Ana Pérez', membershipTypeName: 'Adulto', payment, footer })
+
+    it('lleva IBAN, titular, concepto e importe en HTML y en texto plano', () => {
+      for (const version of [conPago.html, conPago.text]) {
+        expect(version).toContain('ES49 3005 0050 0530 3295 0226')
+        expect(version).toContain('Club de Running Albatera')
+        expect(version).toContain('Cuota 2025/26 Ana Pérez')
+        expect(version).toMatch(/30,00/)
+      }
+    })
+
+    it('explica cómo avisar al club del ingreso', () => {
+      expect(conPago.html).toMatch(/Ya he hecho el ingreso/)
+      expect(conPago.text).toMatch(/Ya he hecho el ingreso/)
+    })
+
+    it('omite la cuenta cuando el tipo de socio no paga', () => {
+      const exento = welcomeEmail({ name: 'Ana', membershipTypeName: 'Honorífico', footer })
+      expect(exento.html).not.toContain('ES49')
+      expect(exento.text).not.toContain('ES49')
+    })
+
+    it('funciona sin importe y escapa las instrucciones del CMS', () => {
+      const sinImporte = welcomeEmail({
+        name: 'Ana',
+        payment: { ...payment, amount: null, notes: '<b>Antes del 31</b>' },
+        footer,
+      })
+      expect(sinImporte.html).not.toMatch(/Importe:/)
+      expect(sinImporte.html).toContain('&lt;b&gt;Antes del 31&lt;/b&gt;')
+      expect(sinImporte.html).not.toContain('<b>Antes del 31</b>')
+    })
+  })
+})
+
+describe('paymentReportedEmail', () => {
+  const mail = paymentReportedEmail({
+    memberId: 42,
+    memberName: 'Ana Pérez',
+    memberEmail: 'ana@ejemplo.com',
+    memberPhone: '600111222',
+    seasonName: '2025/26',
+    membershipTypeName: 'Adulto',
+    amount: 30,
+    concept: 'Cuota 2025/26 Ana Pérez',
+    footer,
+  })
+
+  it('identifica al socio y enlaza a su ficha de gestión', () => {
+    expect(mail.subject).toContain('Ana Pérez')
+    expect(mail.html).toContain('/gestion/42')
+    expect(mail.text).toContain('/gestion/42')
+    expect(mail.html).toContain('ana@ejemplo.com')
+  })
+
+  it('deja claro que la cuota sigue pendiente hasta que el club la confirme', () => {
+    expect(mail.html).toMatch(/pendiente/i)
+    expect(mail.text).toMatch(/pendiente/i)
+  })
+
+  it('escapa el nombre del socio, que es dato de usuario', () => {
+    const hostil = paymentReportedEmail({
+      memberId: 1,
+      memberName: '<script>alert(1)</script>',
+      memberEmail: 'x@y.z',
+      concept: 'Cuota',
+    })
+    expect(hostil.html).not.toContain('<script>')
+    expect(hostil.html).toContain('&lt;script&gt;')
   })
 })
 
@@ -120,6 +201,18 @@ describe('accesibilidad del shell', () => {
   const todos = [
     ['bienvenida', welcomeEmail({ name: 'Ana Pérez', membershipTypeName: 'Adulto', eventTitle: 'ALBATERUN', footer })],
     ['bienvenida mínima', welcomeEmail({ name: 'Ana', footer })],
+    ['bienvenida con cuenta de pago', welcomeEmail({ name: 'Ana Pérez', payment, footer })],
+    [
+      'aviso de pago',
+      paymentReportedEmail({
+        memberId: 7,
+        memberName: 'Ana Pérez',
+        memberEmail: 'ana@ejemplo.com',
+        seasonName: '2025/26',
+        concept: 'Cuota 2025/26 Ana Pérez',
+        footer,
+      }),
+    ],
     ['aviso de contacto', contactNotificationEmail({ name: 'Ana', email: 'a@b.c', subjectLabel: 'Dudas', message: 'Hola', footer })],
     ['acuse de contacto', contactAckEmail({ name: 'Ana', message: 'Hola', footer })],
     ['inscripción', registrationConfirmedEmail({ name: 'Ana', eventTitle: 'ALBATERUN', eventSlug: 'albaterun', footer })],

@@ -6,6 +6,7 @@ import { valueFieldFor, type AttributeType } from '@/lib/attributes'
 import { MEMBER_CATEGORIES } from '@/collections/Members'
 import { parseDistanceToMeters } from '@/lib/distances'
 import { parseMarkToSeconds } from '@/lib/marks'
+import { reportMembershipPayment } from '@/lib/payment-report'
 
 export type ActionResult = { ok: boolean; error?: string; message?: string }
 
@@ -35,6 +36,24 @@ export const cancelRegistrationAction = async (registrationId: number): Promise<
     overrideAccess: true,
   })
   return { ok: true, message: 'Inscripción cancelada.' }
+}
+
+/**
+ * El socio avisa de que ya ha ingresado su cuota. No la marca como pagada: sólo deja la fecha
+ * del aviso y escribe al club, que la confirma desde /gestion.
+ */
+export const reportPaymentAction = async (): Promise<ActionResult> => {
+  const member = await currentMember()
+  if (!member) return { ok: false, error: 'Debes iniciar sesión.' }
+  const payload = await getClient()
+
+  const res = await reportMembershipPayment(payload, { memberId: member.id })
+  if (!res.ok) return { ok: false, error: res.error }
+  if (res.state === 'already-paid') return { ok: true, message: 'Tu cuota ya está confirmada. ¡Gracias!' }
+  if (res.state === 'already-reported') {
+    return { ok: true, message: 'Ya nos habías avisado; el club lo está revisando.' }
+  }
+  return { ok: true, message: 'Avisado. El club confirmará tu cuota en cuanto compruebe el ingreso.' }
 }
 
 /**

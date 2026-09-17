@@ -67,7 +67,9 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
             depth: 0,
             overrideAccess: true,
           })
-        : Promise.resolve({ docs: [] as { paymentStatus?: string | null; type?: unknown }[] }),
+        : Promise.resolve({
+            docs: [] as { paymentStatus?: string | null; type?: unknown; paymentReportedAt?: string | null }[],
+          }),
       payload.find({ collection: 'membership-types', where: { active: { equals: true } }, sort: 'order', limit: 100, overrideAccess: true }),
       payload.find({ collection: 'equipment-categories', where: { active: { not_equals: false } }, sort: 'order', limit: 100, depth: 0, overrideAccess: true }),
       payload.find({ collection: 'equipment-items', where: { active: { equals: true } }, sort: 'order', limit: 200, depth: 0, overrideAccess: true }),
@@ -86,6 +88,7 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
 
   const membership = membershipRes.docs[0]
   const paymentStatus = (membership?.paymentStatus ?? null) as 'paid' | 'pending' | 'exempt' | null
+  const reportedAt = membership?.paymentReportedAt ?? null
   const currentTypeId = idOf(membership?.type) ?? idOf(member.currentMembershipType)
 
   const byDef = new Map<number, MemberAttribute>()
@@ -246,6 +249,15 @@ export default async function MemberFilePage({ params }: { params: Promise<{ id:
                       <p className="mb-4 text-sm text-muted-foreground">
                         Temporada {season.name}. El cobro se hace fuera de la web; aquí solo se registra.
                       </p>
+                      {reportedAt && paymentStatus !== 'paid' && paymentStatus !== 'exempt' && (
+                        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-abtr-yellow/50 bg-abtr-yellow/15 p-4">
+                          <StatusBadge tone="warning">Pago comunicado</StatusBadge>
+                          <p className="text-sm">
+                            El socio avisó de que hizo el ingreso el <strong>{formatDate(reportedAt)}</strong>.
+                            Comprueba el movimiento y marca la cuota como pagada.
+                          </p>
+                        </div>
+                      )}
                       <CuotaControls
                         memberId={member.id}
                         current={paymentStatus}

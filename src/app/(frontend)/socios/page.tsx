@@ -9,6 +9,8 @@ import { getCurrentSeason } from '@/lib/membership'
 import { InscribeButton } from '@/components/site/InscribeButton'
 import { CancelRegistrationButton } from '@/components/site/CancelRegistrationButton'
 import { EventCompanions } from '@/components/site/EventCompanions'
+import { PagoCuotaPanel } from '@/components/site/PagoCuotaPanel'
+import { getMemberPaymentPanelData } from '@/lib/payment-report'
 import { formatDate, formatDateTime } from '@/lib/format'
 import { MEMBER_CATEGORIES } from '@/collections/Members'
 import { getMemberVisibleAttributes } from '@/lib/attributes'
@@ -65,7 +67,7 @@ export default async function MembersAreaPage({
     payload.find({ collection: 'equipment-deliveries', where: { member: { equals: member.id } }, depth: 1, limit: 100, overrideAccess: true }),
     season
       ? payload.find({ collection: 'memberships', where: { and: [{ member: { equals: member.id } }, { season: { equals: season.id } }] }, depth: 1, limit: 1, overrideAccess: true })
-      : Promise.resolve({ docs: [] as { type?: unknown }[] }),
+      : Promise.resolve({ docs: [] as { type?: unknown; paymentReportedAt?: string | null }[] }),
     season
       ? payload.find({ collection: 'equipment-packs', where: { season: { equals: season.id } }, depth: 1, limit: 100, overrideAccess: true })
       : Promise.resolve({ docs: [] as { appliesToAll?: boolean | null; membershipTypes?: unknown[]; lines?: { item?: unknown }[] }[] }),
@@ -125,6 +127,12 @@ export default async function MembersAreaPage({
       : null
   const currentTypeId = idOf(membership?.type) ?? idOf(member.currentMembershipType)
   const cuota = CUOTA[(member.membershipStatus ?? 'pending') as keyof typeof CUOTA] ?? CUOTA.pending
+
+  const pago = await getMemberPaymentPanelData(payload, {
+    memberName: member.name ?? '',
+    seasonName: season?.name,
+    membershipTypeId: currentTypeId,
+  })
 
   const deliveredItemIds = new Set(deliveries.docs.map((d) => idOf(d.item)).filter(Boolean))
   const pendingEquipment: string[] = []
@@ -223,6 +231,21 @@ export default async function MembersAreaPage({
       </div>
 
       <div className="mt-6 flex flex-col gap-5">
+        <Panel title="Pago de la cuota">
+          <PagoCuotaPanel
+            iban={pago.iban}
+            formattedIban={pago.formattedIban}
+            holder={pago.holder}
+            concept={pago.concept}
+            amount={pago.amount}
+            notes={pago.notes}
+            status={(member.membershipStatus ?? 'pending') as 'active' | 'pending' | 'inactive'}
+            reportedAt={membership?.paymentReportedAt ?? null}
+            seasonName={season?.name ?? null}
+            canReport={Boolean(season)}
+          />
+        </Panel>
+
         {customAttributes.length > 0 && (
           <Panel title="Otros datos">
             <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">

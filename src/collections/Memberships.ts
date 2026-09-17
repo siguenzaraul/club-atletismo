@@ -16,7 +16,7 @@ export const Memberships: CollectionConfig = {
   labels: { singular: 'Cuota', plural: 'Cuotas' },
   admin: {
     useAsTitle: 'id',
-    defaultColumns: ['member', 'season', 'type', 'paymentStatus', 'paidAt'],
+    defaultColumns: ['member', 'season', 'type', 'paymentStatus', 'paymentReportedAt', 'paidAt'],
     group: 'Club',
   },
   access: {
@@ -42,6 +42,16 @@ export const Memberships: CollectionConfig = {
       type: 'date',
       label: 'Pagada el',
       admin: { condition: (data) => data?.paymentStatus === 'paid' },
+    },
+    {
+      name: 'paymentReportedAt',
+      type: 'date',
+      label: 'El socio avisó del ingreso el',
+      admin: {
+        readOnly: true,
+        description:
+          'Lo marca el propio socio desde su zona («Ya he hecho el ingreso»). Sigue pendiente hasta que el club lo confirme aquí.',
+      },
     },
     { name: 'amount', type: 'number', label: 'Importe cobrado (€)', min: 0 },
     { name: 'notes', type: 'textarea', label: 'Notas' },

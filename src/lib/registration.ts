@@ -11,6 +11,7 @@ import type { Payload } from 'payload'
 import { getCurrentSeason } from '@/lib/membership'
 import { getEmailFooter, sendEmailAfterResponse, welcomeEmail } from '@/lib/email'
 import { reserveEquipmentForMember, type GarmentSelection } from '@/lib/equipment'
+import { getClubPaymentInfo, paymentConcept } from '@/lib/payments'
 import type { Member } from '@/payload-types'
 
 /**
@@ -194,14 +195,18 @@ export const completeRegistration = async (
   if (!args.sendWelcome || !args.email) return
 
   try {
-    const [footer, membershipType] = await Promise.all([
+    const [footer, membershipType, paymentInfo] = await Promise.all([
       getEmailFooter(payload),
       args.membershipTypeId
         ? payload
             .findByID({ collection: 'membership-types', id: args.membershipTypeId, depth: 0 })
             .catch(() => null)
         : Promise.resolve(null),
+      getClubPaymentInfo(payload),
     ])
+    // Un tipo de socio exento (honorífico, por ejemplo) no debe recibir ninguna cuenta. Sin
+    // tipo asignado sí se manda: la cuota queda pendiente y el club la cobrará igual.
+    const requiresPayment = membershipType ? membershipType.requiresPayment !== false : true
     await sendEmailAfterResponse(payload, {
       to: args.email,
       replyTo: footer.email ?? undefined,
@@ -209,6 +214,15 @@ export const completeRegistration = async (
         name: args.name,
         membershipTypeName: membershipType?.name ?? null,
         eventTitle,
+        payment: requiresPayment
+          ? {
+              formattedIban: paymentInfo.formattedIban,
+              holder: paymentInfo.holder,
+              concept: paymentConcept(args.name, season?.name),
+              amount: membershipType?.amount ?? null,
+              notes: paymentInfo.notes,
+            }
+          : null,
         footer,
       }),
     })
