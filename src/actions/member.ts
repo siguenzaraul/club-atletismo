@@ -7,6 +7,7 @@ import { MEMBER_CATEGORIES } from '@/collections/Members'
 import { parseDistanceToMeters } from '@/lib/distances'
 import { parseMarkToSeconds } from '@/lib/marks'
 import { reportMembershipPayment } from '@/lib/payment-report'
+import { updateMemberEquipment } from '@/lib/member-equipment'
 
 export type ActionResult = { ok: boolean; error?: string; message?: string }
 
@@ -146,6 +147,45 @@ export const updateProfileAction = async (
   }
 
   return { ok: true, message: 'Perfil actualizado.' }
+}
+
+export type EquipmentResult = ActionResult & { fieldErrors?: Record<string, string> }
+
+/**
+ * El socio cambia su equipación desde el perfil. Sólo lo que aún no le han entregado; la lógica
+ * y todas las validaciones viven en `src/lib/member-equipment.ts`.
+ */
+export const updateEquipmentAction = async (
+  _prev: EquipmentResult,
+  formData: FormData,
+): Promise<EquipmentResult> => {
+  const member = await currentMember()
+  if (!member) return { ok: false, error: 'Debes iniciar sesión.' }
+  const payload = await getClient()
+
+  // Las claves de prenda las decide el CMS, así que se leen del propio formulario: `garment:<key>`.
+  const choices = [...formData.keys()]
+    .filter((key) => key.startsWith('garment:'))
+    .map((key) => {
+      const garmentKey = key.slice('garment:'.length)
+      const itemRaw = String(formData.get(key) ?? '').trim()
+      const sizeRaw = String(formData.get(`size:${garmentKey}`) ?? '').trim()
+      return {
+        key: garmentKey,
+        itemId: itemRaw ? Number(itemRaw) : null,
+        sizeId: sizeRaw ? Number(sizeRaw) : null,
+      }
+    })
+    .filter((c) => (c.itemId === null || Number.isFinite(c.itemId)) && (c.sizeId === null || Number.isFinite(c.sizeId)))
+
+  const res = await updateMemberEquipment(payload, { memberId: member.id, choices })
+  if (!res.ok) return { ok: false, error: res.error, fieldErrors: res.fieldErrors }
+
+  // Si no se cambió nada, el aviso ES el mensaje: encadenarle un «no había nada que cambiar»
+  // deja al socio sin saber por qué no se ha guardado lo que acaba de elegir.
+  const notes = res.notes.join(' ')
+  if (res.changed === 0) return { ok: true, message: notes || 'No había nada que cambiar.' }
+  return { ok: true, message: notes ? `Equipación actualizada. ${notes}` : 'Equipación actualizada.' }
 }
 
 /**

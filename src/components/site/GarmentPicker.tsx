@@ -21,12 +21,17 @@ import { PublicSelect } from './PublicField'
 export function GarmentPicker({
   garment,
   errors,
+  defaultItemId = '',
+  defaultSizeId = '',
 }: {
   garment: GarmentOption
   errors?: RegisterFieldErrors
+  /** Elección actual del socio: el alta los deja vacíos, el perfil los precarga. */
+  defaultItemId?: string
+  defaultSizeId?: string
 }) {
-  const [itemId, setItemId] = useState('')
-  const [sizeId, setSizeId] = useState('')
+  const [itemId, setItemId] = useState(defaultItemId)
+  const [sizeId, setSizeId] = useState(defaultSizeId)
 
   const selectedItem = useMemo(
     () => garment.items.find((i) => String(i.id) === itemId) ?? null,

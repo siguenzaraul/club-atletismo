@@ -23,6 +23,7 @@ export const DELIVERY_PAYMENTS = [
  */
 export const DELIVERY_SOURCES = [
   { label: 'Alta en la web', value: 'registration' },
+  { label: 'Elegida por el socio', value: 'member' },
   { label: 'Registrada por el club', value: 'staff' },
   { label: 'Importación', value: 'import' },
 ] as const

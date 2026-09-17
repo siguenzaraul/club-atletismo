@@ -4,6 +4,8 @@ import { currentMember } from '@/lib/session'
 import { getClient } from '@/lib/payload'
 import { ProfileForm, type EditableAttribute } from '@/components/site/ProfileForm'
 import { PublicProfileForm } from '@/components/site/PublicProfileForm'
+import { EquipmentForm } from '@/components/site/EquipmentForm'
+import { getMemberEquipmentState } from '@/lib/member-equipment'
 import { PageHeader } from '@/components/ui/page-header'
 import { attributeInputValue, valueFieldFor, type AttributeType } from '@/lib/attributes'
 import type { MemberAttribute } from '@/payload-types'
@@ -16,7 +18,7 @@ export default async function ProfilePage() {
   if (!member) redirect('/login')
   const payload = await getClient()
 
-  const [defsRes, attrsRes] = await Promise.all([
+  const [defsRes, attrsRes, equipment] = await Promise.all([
     payload.find({
       collection: 'attribute-definitions',
       where: { and: [{ active: { equals: true } }, { editableByMember: { equals: true } }] },
@@ -32,6 +34,7 @@ export default async function ProfilePage() {
       limit: 200,
       overrideAccess: true,
     }),
+    getMemberEquipmentState(payload, member.id),
   ])
 
   const byDef = new Map<number, MemberAttribute>()
@@ -80,6 +83,15 @@ export default async function ProfilePage() {
           editableAttributes={editableAttributes}
         />
       </div>
+
+      {equipment.available && equipment.garments.length > 0 && (
+        <section id="equipacion" className="mt-6 rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <h2 className="font-display text-2xl tracking-wide">Mi equipación</h2>
+          <div className="mt-5">
+            <EquipmentForm garments={equipment.garments} seasonName={equipment.seasonName} />
+          </div>
+        </section>
+      )}
 
       <section className="mt-6 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <h2 className="font-display text-2xl tracking-wide">Ficha pública de atleta</h2>

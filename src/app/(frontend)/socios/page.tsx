@@ -260,6 +260,13 @@ export default async function MembersAreaPage({
         )}
 
         <Panel title="Mi equipación">
+          <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+            ¿Te has equivocado de talla o de prenda?{' '}
+            <Link href="/socios/perfil#equipacion" className="font-semibold text-abtr-blue hover:underline">
+              Cámbialo desde tu perfil
+            </Link>{' '}
+            mientras no te la hayan entregado.
+          </p>
           {pendingEquipment.length > 0 && (
             <div className="mb-4 rounded-xl border border-abtr-yellow/50 bg-abtr-yellow/15 p-4">
               <p className="text-sm font-semibold">Te falta por recoger esta temporada:</p>

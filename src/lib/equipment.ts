@@ -209,6 +209,46 @@ export const ensureStandardSizes = async (
 
 export type GarmentSelection = { categoryId: number; itemId: number; sizeId: number | null }
 
+/**
+ * Estado con el que nace (o al que vuelve) una elección de equipación.
+ *
+ * Reservar descuenta stock; solicitar no. Con el overbooking desactivado y sin unidades libres
+ * la elección cae a lista de espera en vez de dejar el stock en negativo. Vive aquí y no dentro
+ * de `reserveEquipmentForMember` porque el socio también cambia de prenda desde su perfil, y
+ * las dos rutas tienen que decidir igual.
+ */
+export const statusForSelection = async (
+  payload: BasePayload,
+  args: {
+    itemId: number
+    sizeId: number | null
+    seasonId: number
+    reserveStock: boolean
+    allowOverbooking: boolean
+    req?: PayloadRequest
+  },
+): Promise<'reserved' | 'requested'> => {
+  const { itemId, sizeId, seasonId, reserveStock, allowOverbooking, req } = args
+  if (!reserveStock) return 'requested'
+  if (allowOverbooking || !sizeId) return 'reserved'
+
+  const stock = await payload.find({
+    collection: 'equipment-stock',
+    where: {
+      and: [
+        { item: { equals: itemId } },
+        { size: { equals: sizeId } },
+        { season: { equals: seasonId } },
+      ],
+    },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+    req,
+  })
+  return (stock.docs[0]?.quantityAvailable ?? 0) > 0 ? 'reserved' : 'requested'
+}
+
 export type ReserveOutcome = {
   /** Entregas creadas en estado «Reservada» (descuentan stock). */
   reserved: number
@@ -238,10 +278,13 @@ export const reserveEquipmentForMember = async (
     selections: GarmentSelection[]
     reserveStock: boolean
     allowOverbooking: boolean
+    /** De dónde sale la elección. El alta no lo pasa; el perfil del socio sí. */
+    source?: 'registration' | 'member'
     req?: PayloadRequest
   },
 ): Promise<ReserveOutcome> => {
   const { memberId, seasonId, selections, reserveStock, allowOverbooking, req } = args
+  const source = args.source ?? 'registration'
   if (!seasonId || selections.length === 0) return EMPTY_OUTCOME
 
   const outcome: ReserveOutcome = { reserved: 0, waitlisted: 0, skipped: [] }
@@ -299,27 +342,14 @@ export const reserveEquipmentForMember = async (
       }
     }
 
-    // Estado: reservar descuenta stock; solicitar no. Si el club ha desactivado el overbooking
-    // y no quedan unidades, la elección pasa a lista de espera en vez de dejar el stock en
-    // negativo.
-    let status: 'reserved' | 'requested' = reserveStock ? 'reserved' : 'requested'
-    if (status === 'reserved' && !allowOverbooking && size) {
-      const stock = await payload.find({
-        collection: 'equipment-stock',
-        where: {
-          and: [
-            { item: { equals: itemId } },
-            { size: { equals: size.id } },
-            { season: { equals: seasonId } },
-          ],
-        },
-        limit: 1,
-        depth: 0,
-        overrideAccess: true,
-        req,
-      })
-      if ((stock.docs[0]?.quantityAvailable ?? 0) <= 0) status = 'requested'
-    }
+    const status = await statusForSelection(payload, {
+      itemId,
+      sizeId: size?.id ?? null,
+      seasonId,
+      reserveStock,
+      allowOverbooking,
+      req,
+    })
 
     try {
       await payload.create({
@@ -333,7 +363,7 @@ export const reserveEquipmentForMember = async (
           status,
           // El alta pública no sabe si la cuota cubre la prenda: lo decide el staff al entregar.
           payment: 'pending',
-          source: 'registration',
+          source,
         },
         // `create` de esta colección es isAdminOrEditor y quien se registra es un socio.
         overrideAccess: true,
