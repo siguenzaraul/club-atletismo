@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { anyone, isAdmin, isAdminOrEditor } from '../access'
-import { cascadeDelete } from '../lib/cascade'
+import { cascadeDelete, removeFromCollectionArray } from '../lib/cascade'
 import { blockIfReferenced } from '../lib/cascade-guard'
 import { slugField } from '../fields/slug'
 
@@ -52,6 +52,12 @@ export const EquipmentItems: CollectionConfig = {
           [{ collection: 'equipment-deliveries', field: 'item', label: 'entregas registradas' }],
           'Desactívalo en vez de borrarlo: deja de ofrecerse y el histórico se mantiene.',
         )
+        // Una línea de pack es configuración: si la prenda desaparece, el pack deja de pedirla.
+        await removeFromCollectionArray(req, id, {
+          collection: 'equipment-packs',
+          arrayField: 'lines',
+          refField: 'item',
+        })
         // El stock es un contador derivado del artículo: sin artículo no significa nada.
         await cascadeDelete(req, id, [{ collection: 'equipment-stock', field: 'item' }])
       },

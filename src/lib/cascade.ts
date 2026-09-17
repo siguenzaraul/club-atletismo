@@ -63,6 +63,48 @@ export const detachRefs = async (
 }
 
 /**
+ * Quita de un array de OTRA colección las filas que apuntan al documento que se borra.
+ *
+ * Es el caso de los packs de equipación: una línea guarda el artículo en una columna `NOT NULL`,
+ * así que borrar una prenda que está dentro de un pack moría contra la base de datos aunque
+ * nadie la hubiera recibido nunca. La línea es configuración, no histórico: quitarla es
+ * exactamente lo que significa borrar la prenda.
+ */
+export const removeFromCollectionArray = async (
+  req: PayloadRequest,
+  id: number | string,
+  target: { collection: CollectionSlug; arrayField: string; refField: string },
+): Promise<void> => {
+  const res = await req.payload.find({
+    collection: target.collection,
+    where: { [`${target.arrayField}.${target.refField}`]: { equals: id } } as Where,
+    depth: 0,
+    limit: 500,
+    overrideAccess: true,
+    req,
+  })
+
+  const idOf = (v: unknown) =>
+    v == null ? null : typeof v === 'object' ? ((v as { id?: unknown }).id ?? null) : v
+
+  for (const doc of res.docs) {
+    const rows = (doc as unknown as Record<string, unknown>)[target.arrayField]
+    if (!Array.isArray(rows)) continue
+    const kept = rows.filter(
+      (row) => String(idOf((row as Record<string, unknown>)[target.refField])) !== String(id),
+    )
+    if (kept.length === rows.length) continue
+    await req.payload.update({
+      collection: target.collection,
+      id: (doc as { id: number | string }).id,
+      data: { [target.arrayField]: kept } as never,
+      overrideAccess: true,
+      req,
+    })
+  }
+}
+
+/**
  * Quita de un array de un global las filas que apuntan al documento que se borra.
  *
  * Es el caso del formulario de alta: la fila que pregunta por «parte de arriba» guarda el tipo

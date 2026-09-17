@@ -115,6 +115,11 @@ significa nada sin él, o **parar** con un mensaje que diga qué hay dentro. Si 
 `required` nueva, añade también su regla, o acabas de romper el borrado del padre.
 `tests/int/borrados.int.spec.ts` los cubre.
 
+**Ojo con las filas de `array`**, que es donde más fácil se escapa: una línea de pack
+(`equipment_packs_lines.item_id`) o una fila del formulario de alta
+(`registration_form_garments.category_id`) bloquean igual que una colección entera, y no se ven
+en el listado de relaciones. Para esas están `removeFromCollectionArray` y `removeFromGlobalArray`.
+
 ---
 
 ## Comandos
