@@ -88,6 +88,33 @@ Añadir un valor a `MEMBER_CATEGORIES`, `EVENT_SERIES`, `CONTACT_SUBJECTS`… ex
 **No los toques.** Para taxonomías que crecen, usa un valor canónico numérico o de texto libre
 con un catálogo en TypeScript — como se hizo con las distancias (`src/lib/distances.ts`).
 
+### 8. `collections/Members.ts` llega al bundle del navegador
+
+`ProfileForm` y `DatosForm` (ambos `'use client'`) importan `MEMBER_CATEGORIES` de
+`collections/Members.ts`. Eso arrastra al cliente **todo lo que ese fichero importe como valor**.
+
+Una sola línea `import { APIError } from 'payload'` en un módulo que alcance `Members.ts` mete el
+logger de Payload (pino) en el bundle y el build muere con
+`Module not found: Can't resolve 'worker_threads'` — un error que no menciona ni Payload ni el
+componente culpable.
+
+**En `Members.ts` y en lo que él importe, `payload` sólo en `import type`.** Por eso
+`blockIfReferenced` vive en `src/lib/cascade-guard.ts` y no en `src/lib/cascade.ts`. Lo mismo
+aplica a `ContactMessages.ts` y `EquipmentDeliveries.ts`, que también los importan componentes de
+cliente.
+
+### 9. Borrar un documento referenciado revienta contra la BD
+
+Payload declara las claves ajenas como `ON DELETE SET NULL`, pero las columnas de los campos
+`required` son `NOT NULL`. Resultado: borrar un socio con cuota, un tipo de prenda que pregunta el
+formulario de alta, una temporada, una prueba con resultados… fallaba con
+`Failed query: delete from …`, que en el panel se ve como «algo ha fallado».
+
+Cada padre resuelve esto en un `beforeDelete` (ver `src/lib/cascade.ts`): **arrastrar** lo que no
+significa nada sin él, o **parar** con un mensaje que diga qué hay dentro. Si añades una relación
+`required` nueva, añade también su regla, o acabas de romper el borrado del padre.
+`tests/int/borrados.int.spec.ts` los cubre.
+
 ---
 
 ## Comandos

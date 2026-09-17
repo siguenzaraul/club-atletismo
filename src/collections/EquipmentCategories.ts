@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { anyone, isAdmin, isAdminOrEditor } from '../access'
+import { removeFromGlobalArray } from '../lib/cascade'
 import { slugField } from '../fields/slug'
 
 /**
@@ -72,4 +73,18 @@ export const EquipmentCategories: CollectionConfig = {
       label: 'Prendas de este tipo',
     },
   ],
+  hooks: {
+    beforeDelete: [
+      async ({ id, req }) => {
+        // El formulario de alta guarda el tipo de prenda en una columna NOT NULL: sin quitar esa
+        // fila, borrar el tipo desde el panel reventaba contra la base de datos. Quitarla es
+        // además lo que el club quiere decir al borrarlo: deja de preguntarse en el alta.
+        await removeFromGlobalArray(req, id, {
+          slug: 'registration-form',
+          arrayField: 'garments',
+          refField: 'category',
+        })
+      },
+    ],
+  },
 }

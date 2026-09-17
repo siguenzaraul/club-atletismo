@@ -1,6 +1,8 @@
 import type { CollectionConfig } from 'payload'
 
 import { anyone, isAdmin, isAdminOrEditor } from '../access'
+import { cascadeDelete } from '../lib/cascade'
+import { blockIfReferenced } from '../lib/cascade-guard'
 
 /** Una talla concreta dentro de una escala (M, 42, Única…). */
 export const Sizes: CollectionConfig = {
@@ -31,4 +33,17 @@ export const Sizes: CollectionConfig = {
     },
     { name: 'order', type: 'number', label: 'Orden', defaultValue: 0, admin: { position: 'sidebar' } },
   ],
+  hooks: {
+    beforeDelete: [
+      async ({ id, req }) => {
+        await blockIfReferenced(
+          req,
+          id,
+          [{ collection: 'equipment-deliveries', field: 'size', label: 'entregas con esta talla' }],
+          'Desactívala en vez de borrarla: deja de ofrecerse y las entregas antiguas se conservan.',
+        )
+        await cascadeDelete(req, id, [{ collection: 'equipment-stock', field: 'size' }])
+      },
+    ],
+  },
 }

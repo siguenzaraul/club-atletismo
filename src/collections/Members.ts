@@ -7,6 +7,7 @@ import type {
 
 import { anyone, isAdmin, isAdminOrEditorFieldLevel, adminOrOwn } from '../access'
 import { MEMBER_TOKEN_EXPIRATION } from '../lib/auth-config'
+import { cascadeDelete, detachRefs } from '../lib/cascade'
 import { parseMarkToSeconds } from '../lib/marks'
 import { slugify } from '../lib/slugify'
 
@@ -317,5 +318,24 @@ export const Members: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [sealImageRightsAcceptedAt, computePersonalBestSeconds, assignPublicSlug],
+    beforeDelete: [
+      async ({ id, req }) => {
+        // Lo personal se va con el socio: su cuota, sus campos a medida, su equipación y sus
+        // inscripciones no significan nada sin él (y borrarlas es lo correcto si alguien pide
+        // que se le borre del club).
+        await cascadeDelete(req, id, [
+          { collection: 'memberships', field: 'member' },
+          { collection: 'member-attributes', field: 'member' },
+          { collection: 'equipment-deliveries', field: 'member' },
+          { collection: 'event-registrations', field: 'member' },
+        ])
+        // Los resultados NO: son la historia pública de una carrera y `athleteName` es
+        // obligatorio, así que la clasificación sigue completa sin el enlace al socio.
+        await detachRefs(req, id, [
+          { collection: 'results', field: 'member' },
+          { collection: 'team', field: 'member' },
+        ])
+      },
+    ],
   },
 }

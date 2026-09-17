@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { anyone, isAdmin, isAdminOrEditor } from '../access'
+import { cascadeDelete } from '../lib/cascade'
 import { slugField } from '../fields/slug'
 
 export const ATTRIBUTE_TYPES = [
@@ -80,4 +81,13 @@ export const AttributeDefinitions: CollectionConfig = {
     { name: 'order', type: 'number', label: 'Orden', defaultValue: 0, admin: { position: 'sidebar' } },
     { name: 'active', type: 'checkbox', label: 'Activo', defaultValue: true, admin: { position: 'sidebar' } },
   ],
+  hooks: {
+    beforeDelete: [
+      async ({ id, req }) => {
+        // Borrar la definición de un campo es decir «ya no llevamos este dato»: sus valores se
+        // van con ella. Sin esto, `member_attributes.definition_id` (NOT NULL) bloqueaba.
+        await cascadeDelete(req, id, [{ collection: 'member-attributes', field: 'definition' }])
+      },
+    ],
+  },
 }

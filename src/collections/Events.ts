@@ -1,6 +1,8 @@
 import type { CollectionConfig } from 'payload'
 
 import { anyone, isAdminOrEditor } from '../access'
+import { cascadeDelete } from '../lib/cascade'
+import { blockIfReferenced } from '../lib/cascade-guard'
 import { slugField } from '../fields/slug'
 import { MEMBER_CATEGORIES } from './Members'
 
@@ -93,4 +95,18 @@ export const Events: CollectionConfig = {
       ],
     },
   ],
+  hooks: {
+    beforeDelete: [
+      async ({ id, req }) => {
+        await blockIfReferenced(
+          req,
+          id,
+          [{ collection: 'results', field: 'event', label: 'resultados' }],
+          'Son la clasificación pública de la prueba: bórralos antes si de verdad quieres perderla.',
+        )
+        // Las inscripciones sí se van con la prueba: sin ella no hay a qué apuntarse.
+        await cascadeDelete(req, id, [{ collection: 'event-registrations', field: 'event' }])
+      },
+    ],
+  },
 }

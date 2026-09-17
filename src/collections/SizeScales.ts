@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { anyone, isAdmin, isAdminOrEditor } from '../access'
+import { blockIfReferenced } from '../lib/cascade-guard'
 import { slugField } from '../fields/slug'
 
 /** Escalas de talla configurables: XS-XXL, numéricas, única… */
@@ -19,4 +20,19 @@ export const SizeScales: CollectionConfig = {
     slugField('name'),
     { name: 'sizes', type: 'join', collection: 'sizes', on: 'scale', label: 'Tallas de esta escala' },
   ],
+  hooks: {
+    beforeDelete: [
+      async ({ id, req }) => {
+        await blockIfReferenced(
+          req,
+          id,
+          [
+            { collection: 'equipment-items', field: 'sizeScale', label: 'artículos que la usan' },
+            { collection: 'sizes', field: 'scale', label: 'tallas dentro de ella' },
+          ],
+          'Cambia primero esos artículos de escala, o borra antes sus tallas.',
+        )
+      },
+    ],
+  },
 }

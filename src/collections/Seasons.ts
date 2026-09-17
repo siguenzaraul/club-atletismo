@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { anyone, isAdmin, isAdminOrEditor } from '../access'
+import { blockIfReferenced } from '../lib/cascade-guard'
 import { slugField } from '../fields/slug'
 
 /** Temporadas del club (ej. 2025/2026). Eje transversal de cuotas, packs y stock. */
@@ -41,6 +42,23 @@ export const Seasons: CollectionConfig = {
     { name: 'endDate', type: 'date', label: 'Fin' },
   ],
   hooks: {
+    beforeDelete: [
+      async ({ id, req }) => {
+        // Una temporada es el eje de las cuotas, la equipación y el stock: borrarla arrastraría
+        // años de datos del club. Se corta diciendo qué hay dentro.
+        await blockIfReferenced(
+          req,
+          id,
+          [
+            { collection: 'memberships', field: 'season', label: 'cuotas' },
+            { collection: 'equipment-deliveries', field: 'season', label: 'entregas de equipación' },
+            { collection: 'equipment-stock', field: 'season', label: 'filas de stock' },
+            { collection: 'equipment-packs', field: 'season', label: 'packs de equipación' },
+          ],
+          'Si de verdad quieres borrarla, vacía antes esos datos.',
+        )
+      },
+    ],
     // Keep a single current season: unmark the others when one is set current.
     afterChange: [
       async ({ doc, req, operation, context }) => {
